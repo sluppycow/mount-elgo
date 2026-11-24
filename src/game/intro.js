@@ -71,7 +71,7 @@ export class Intro {
     this.handL = hand;
     this.sleeves = [addSleeve(this.rhHand, { z0: 0.03, len: 0.27, upperParent: game.camera }), addSleeve(hand, { z0: 0.03, len: 0.27, upperParent: game.camera })];
     this.shoulders = [V(0.21, -0.3, 0.14), V(-0.21, -0.3, 0.14)];
-    this.camRig = V(-0.38, 1.74, 0.12); this.yaw = 0; this.pitch = -0.05;
+    this.camRig = V(-0.38, 1.74, 0.12); this.yaw = 0; this.pitch = -0.16;
     this.lines = data.lines.slice(); this.sfxOn = false;
   }
   start() {
@@ -108,7 +108,7 @@ export class Intro {
     for (const c of this.d.cue_markers) if (!this.cues.has(c.id) && t >= c.time_s) { this.cues.add(c.id); this.cue(c); }
     const s = this.sAt(Math.min(t, this.T)); this.speed = dt > 0 ? Math.abs(s - (this.lastS ?? s)) / dt : 0; this.lastS = s; this.place(s, dt);
     // look around a little from the seat
-    this.yaw = THREE.MathUtils.clamp(this.yaw - inp.look.x, -1.3, 1.3); this.pitch = THREE.MathUtils.clamp(this.pitch - inp.look.y, -0.6, 0.45);
+    this.yaw = THREE.MathUtils.clamp(this.yaw - inp.look.x, -1.3, 1.3); this.pitch = THREE.MathUtils.clamp(this.pitch - inp.look.y, -1.05, 0.45);
     g.camera.position.copy(this.camRig); g.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ');
     // walkie comes up to the mouth when the player talks, rests on the knee otherwise
     const up = this.speaking > 0 ? 1 : 0; this.speaking -= dt; this.wk = (this.wk || 0) + (up - (this.wk || 0)) * Math.min(1, dt * 3);
@@ -122,6 +122,7 @@ export class Intro {
     W.led.material.color.set(tx ? 0xff3010 : rx ? 0x30ff50 : 0x0a140a); W.ledGlow.material.color.set(tx ? 0xff4020 : 0x40ff60); W.ledGlow.material.opacity = tx || rx ? 0.8 : 0;
     // gauges: speed / revs from the path speed
     const R = this.R; const vms = this.speed || 0; const mph = vms * 2.237; const rpm = this.done ? 0 : (this.engineOff ? 0 : 750 + mph * 55);
+    if (R.legs) { const acc = dt > 0 ? (vms - (this.prevV ?? vms)) / dt : 0; this.prevV = vms; R.legs.update(dt, { accel: acc, steer: this.wheel.rotation.z }); }
     R.speedo.rotation.z = GAUGE.rot(mph / 100, 130); R.tach.rotation.z = GAUGE.rot(rpm / 7000, 130);
     R.fuel.rotation.z = GAUGE.rot(0.62, 60); R.temp.rotation.z = GAUGE.rot(0.48, 60); R.oil.rotation.z = GAUGE.rot(rpm > 0 ? 0.55 : 0, 60); R.batt.rotation.z = GAUGE.rot(rpm > 0 ? 0.6 : 0.45, 60);
     // skip: hold E / USE
