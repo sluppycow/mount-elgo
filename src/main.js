@@ -79,7 +79,7 @@ let nearFire = null, hoseOn = false, sprayLoop = null, genHum = null, pourL = nu
 G.power = true; G.radioDead = false; G.pending = new Set(); G.gen = { running: true, fuel: 1, hasCan: false, pulls: 0 };
 const GR = buildGround(scene, T, { onSecret: (d) => openSecret(d) });
 const SW = new Skinwalker(scene, {
-  sound: (id, p, v, o) => G.sound(id, p, v, o), step: (p, k) => SFX.thud(audio, p, 0.25 + 0.5 * k), growl: (p) => SFX.growl(audio, p, 1, 1.6), caught: () => onCaught(),
+  sound: (id, p, v, o) => G.sound(id, p, v, o), synth: (n, p, ...a) => { if (SFX[n]) SFX[n](audio, p, ...a); }, step: (p, k) => SFX.thud(audio, p, 0.25 + 0.5 * k), growl: (p) => SFX.growl(audio, p, 1, 1.6), caught: () => onCaught(),
   scared: () => { shiftStats.scares++; G.toast('It ran. MOVE!', 2.5); panicT = Math.max(panicT, 8); },
   charge: () => { panicT = Math.max(panicT, 12); G.toast('IT\u2019S COMING \u2014 SHOOT IT!', 2.5); },
   spotted: () => { panicT = Math.max(panicT, 6); if (!swSeen) { swSeen = true; setTimeout(() => thought('Something is out there. Pacing me. That is not a deer.'), 900); } },
