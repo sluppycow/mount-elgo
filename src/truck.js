@@ -285,7 +285,7 @@ function workBoot(M) { const b = new THREE.Group(); const L = leatherMaps();
   const bow = add(new THREE.TorusGeometry(0.012, 0.0025, 5, 12), lace, 0.012, 0.115, -0.04); bow.rotation.y = 0.6;
   return b; }
 function cabDetail(T, M, R) {
-  const FY = 0.72; const L = leatherMaps(), F = fabricMaps();
+  const FY = 0.62; const L = leatherMaps(), F = fabricMaps(); // footwell pan sits below the door sills
   const carpet = new THREE.MeshStandardMaterial({ color: 0x2e2620, roughness: 1, normalMap: texOf(F.n, { rep: [30, 30] }), normalScale: new THREE.Vector2(1.2, 1.2) });
   const matM = new THREE.MeshStandardMaterial({ color: 0x141312, roughness: 0.85, normalMap: knurlNormal(6), normalScale: new THREE.Vector2(0.8, 0.8) });
   // floor, firewall, transmission tunnel, rubber floor mats
@@ -294,9 +294,9 @@ function cabDetail(T, M, R) {
   for (const x of [-0.45, 0.45]) mesh(rbox(0.42, 0.012, 0.55, 0.01), matM, T, x, FY + 0.006, -0.55);
   // pedals: gas (hinged floor pedal), brake (pad on an arm), parking brake far left, dead rest
   const rubber = M.rubber; const padM = new THREE.MeshStandardMaterial({ color: 0x181818, roughness: 0.8, normalMap: knurlNormal(10) });
-  { const g = mesh(rbox(0.075, 0.012, 0.2, 0.006), padM, T, -0.22, FY + 0.1, -0.74); g.rotation.x = 0.85; R.gasPedal = g; }
-  for (const [x, y, w] of [[-0.42, 0.96, 0.11], [-0.66, 1.02, 0.07]]) { mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.32, 8), M.chrome, T, x, y + 0.13, -0.72).rotation.x = 0.35; const pd = mesh(rbox(w, 0.075, 0.016, 0.008), padM, T, x, y - 0.03, -0.68); pd.rotation.x = -0.35; }
-  mesh(rbox(0.1, 0.012, 0.22, 0.005), matM, T, -0.72, FY + 0.08, -0.62).rotation.x = 0.7; // dead pedal
+  { const g = mesh(rbox(0.08, 0.012, 0.2, 0.006), padM, T, -0.16, FY + 0.075, -0.69); g.rotation.x = 0.3; R.gasPedal = g; mesh(new THREE.BoxGeometry(0.03, 0.01, 0.04), M.chrome, T, -0.16, FY + 0.03, -0.6); }
+  for (const [x, y, w] of [[-0.38, 0.86, 0.11], [-0.8, 0.95, 0.07]]) { mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.3, 8), M.chrome, T, x, y + 0.15, -0.74).rotation.x = 0.4; const pd = mesh(rbox(w, 0.075, 0.016, 0.008), padM, T, x, y, -0.68); pd.rotation.x = -0.6; }
+  mesh(rbox(0.11, 0.012, 0.24, 0.005), matM, T, -0.64, FY + 0.05, -0.62).rotation.x = 0.3; // footrest plate
   // column shifter (PRNDL) on the right of the column, with a chrome indicator window
   { const sh = new THREE.Group(); sh.position.set(0.07, -0.02, -0.12); sh.rotation.set(0.1, 0, -0.35); R.wheel.add(sh); mesh(new THREE.CylinderGeometry(0.006, 0.008, 0.2, 10).rotateZ(Math.PI / 2), M.chrome, sh, 0.1, 0, 0); mesh(new THREE.SphereGeometry(0.016, 14, 10), M.plastic, sh, 0.205, 0, 0).scale.set(1.4, 1, 1); }
   { const pr = cnv(256, 32, (x, w, h) => { x.fillStyle = '#0a0a0a'; x.fillRect(0, 0, w, h); x.fillStyle = '#e8e2d0'; x.font = 'bold 22px Arial'; 'PRND21'.split('').forEach((c, i) => x.fillText(c, 14 + i * 40, 24)); x.fillStyle = '#ff4020'; x.fillRect(132, 26, 18, 4); });
@@ -319,19 +319,27 @@ function cabDetail(T, M, R) {
   { const sh = mesh(new THREE.CylinderGeometry(0.045, 0.06, 0.22, 18), M.plastic, R.wheel, 0, -0.012, -0.14); sh.rotation.x = Math.PI / 2; }
   // dome light + A-pillar trim + headliner seam
   { const dl = mesh(rbox(0.2, 0.025, 0.1, 0.01, 2), new THREE.MeshStandardMaterial({ color: 0xf2ead8, emissive: 0xfff0d0, emissiveIntensity: 0.12, roughness: 0.3, transparent: true, opacity: 0.9 }), T, 0, 2.0, 0.35); mesh(rbox(0.23, 0.012, 0.13, 0.005), M.trim, T, 0, 2.012, 0.35); }
-  // driver legs: canvas work pants (thigh fixed on the seat, shin + boot hinge at the knee) + leather work boots
+  // driver legs (adult: ~45 cm thigh, ~45 cm shin). Hip pivots at seat height under the eye, thighs run forward nearly
+  // level to bent knees just under/behind the wheel rim, shins drop ~65 deg to boots flat on the pedal / dead pedal.
   const pants = new THREE.MeshStandardMaterial({ map: texOf(twill([96, 82, 58]), { srgb: true, rep: [4, 8] }), roughness: 0.95, normalMap: texOf(F.n, { rep: [8, 16] }), normalScale: new THREE.Vector2(0.7, 0.7) });
-  const legs = []; for (const [side, hipX, foot] of [[1, -0.29, 'gas'], [-1, -0.5, 'rest']]) {
-    const hip = V(hipX, 1.12, 0.22), knee = V(hipX + side * 0.04, 1.07, -0.2); const thigh = mesh(limb([hip, hip.clone().lerp(knee, 0.5).add(V(0, 0.02, 0)), knee], (t) => 0.088 - 0.028 * t, { wr: 0.6 }), pants, T);
-    const kp = new THREE.Group(); kp.position.copy(knee); T.add(kp); const kneeCap = new THREE.Mesh(new THREE.SphereGeometry(0.062, 16, 10), pants); kp.add(kneeCap);
-    const ankle = foot === 'gas' ? V(hipX + 0.07, 0.86, -0.5) : V(hipX - 0.16, 0.84, -0.46); const aL = ankle.clone().sub(knee);
-    const shin = new THREE.Mesh(limb([V(0, 0, 0), aL.clone().multiplyScalar(0.5).add(V(0, 0, -0.015)), aL], (t) => 0.06 - 0.012 * t + (t > 0.85 ? 0.01 * (t - 0.85) / 0.15 : 0), { wr: 1 }), pants); kp.add(shin);
-    const boot = workBoot(M); boot.position.copy(aL); boot.rotation.set(foot === 'gas' ? -0.42 : -0.12, side * 0.06, 0); kp.add(boot);
-    legs.push({ kp, boot, foot, base: boot.rotation.x }); }
+  const legs = []; const SH = 0.45, ANG = 65 * Math.PI / 180;
+  for (const [side, hipX, kneeX, ankX, foot] of [[1, -0.27, -0.15, -0.16, 'gas'], [-1, -0.49, -0.62, -0.63, 'rest']]) {
+    const hip = V(hipX, 1.11, 0.15), knee = V(kneeX, 1.12, -0.27);
+    const ankle = V(ankX, knee.y - SH * Math.sin(ANG), knee.z - SH * Math.cos(ANG)); // y ~0.71, z ~-0.46
+    // thigh: seat to knee, slight sag mid-thigh, widening into the knee
+    mesh(limb([hip, hip.clone().lerp(knee, 0.5).add(V(0, 0.012, 0)), knee], (t) => 0.086 - 0.024 * t + 0.008 * Math.max(0, t - 0.85) / 0.15, { wr: 0.5 }), pants, T);
+    const kp = new THREE.Group(); kp.position.copy(knee); T.add(kp);
+    const kc = new THREE.Mesh(new THREE.SphereGeometry(0.068, 18, 12), pants); kc.scale.set(1, 0.9, 1.05); kp.add(kc); // knee joint
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.042, 14, 10), pants); cap.position.set(0, 0.03, -0.045); cap.scale.set(1.05, 0.85, 0.7); kp.add(cap); // kneecap
+    for (let k = 0; k < 3; k++) { const f = new THREE.Mesh(new THREE.TorusGeometry(0.064 - k * 0.002, 0.007, 6, 18), pants); f.position.set(0, -0.03 - k * 0.028, -0.02 - k * 0.012); f.rotation.x = Math.PI / 2 - 0.45; kp.add(f); } // bunching behind/below the knee
+    const aL = ankle.clone().sub(knee); const hem = aL.clone().add(V(0, 0.09, 0.01)); // the hem rests on the boot collar
+    const shin = new THREE.Mesh(limb([V(0, -0.01, 0), aL.clone().multiplyScalar(0.45), hem], (t) => 0.06 - 0.008 * t + (t > 0.82 ? 0.012 * (t - 0.82) / 0.18 : 0), { wr: 0.8 }), pants); kp.add(shin);
+    const boot = workBoot(M); boot.position.copy(aL); const base = foot === 'gas' ? 0.25 : 0.3; boot.rotation.set(base, side * 0.08, 0); kp.add(boot); // toe angled up onto the pedal, heel on the mat
+    legs.push({ kp, boot, foot, base }); }
   R.legs = { legs, t: 0, update(dt, { accel = 0, steer = 0 } = {}) { this.t += dt; const brake = THREE.MathUtils.clamp(-accel * 0.5, 0, 1); this.b = (this.b || 0) + (brake - (this.b || 0)) * Math.min(1, dt * 4);
-    for (const l of legs) { if (l.foot === 'gas') { l.kp.rotation.y = -this.b * 0.12; l.kp.rotation.x = this.b * 0.05 + Math.sin(this.t * 1.7) * 0.006; l.boot.rotation.x = l.base - 0.08 * (1 - this.b) * (0.6 + 0.4 * Math.sin(this.t * 0.9)); }
-      else { l.kp.rotation.z = steer * 0.03; l.kp.rotation.x = Math.sin(this.t * 1.1 + 1) * 0.004; } }
-    if (R.gasPedal) R.gasPedal.rotation.x = 0.85 + 0.12 * (1 - this.b); } };
+    for (const l of legs) { if (l.foot === 'gas') { l.kp.rotation.y = -this.b * 0.1; l.kp.rotation.x = this.b * 0.04 + Math.sin(this.t * 1.7) * 0.004; l.boot.rotation.x = l.base + 0.06 * this.b - 0.03 * (1 - this.b) * (0.6 + 0.4 * Math.sin(this.t * 0.9)); }
+      else { l.kp.rotation.z = steer * 0.03; l.kp.rotation.x = Math.sin(this.t * 1.1 + 1) * 0.003; } }
+    if (R.gasPedal) R.gasPedal.rotation.x = 0.3 - 0.05 * (1 - this.b); } };
 }
 // merge static meshes parented directly to the truck, per material (fewer draw calls on phones)
 function mergeStatic(T, R) {

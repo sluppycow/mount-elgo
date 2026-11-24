@@ -75,7 +75,7 @@ export class Intro {
     this.lines = data.lines.slice(); this.sfxOn = false;
   }
   start() {
-    const g = this.g; g.camera.position.set(0, 0, 0); g.camera.rotation.set(0, 0, 0); this.truck.add(g.camera); g.camera.position.copy(this.camRig);
+    const g = this.g; g.camera.position.set(0, 0, 0); g.camera.rotation.set(0, 0, 0); this.truck.add(g.camera); { const k = THREE.MathUtils.smoothstep(-this.pitch, 0.45, 1.1); g.camera.position.set(this.camRig.x, this.camRig.y - 0.1 * k, this.camRig.z - 0.3 * k); } /* lean forward to look down into the footwell */
     g.audio.loop('truck', 'truck-drive-loop', 0.8, 'sfx'); g.audio.birds(true); this.place(0, 0);
   }
   sAt(t) { const v0 = this.v0, T = this.T; if (t < T - 8) return v0 * t; const u = Math.min(8, t - (T - 8)); return v0 * (T - 8) + v0 * u - v0 * u * u / 16; }
@@ -108,8 +108,8 @@ export class Intro {
     for (const c of this.d.cue_markers) if (!this.cues.has(c.id) && t >= c.time_s) { this.cues.add(c.id); this.cue(c); }
     const s = this.sAt(Math.min(t, this.T)); this.speed = dt > 0 ? Math.abs(s - (this.lastS ?? s)) / dt : 0; this.lastS = s; this.place(s, dt);
     // look around a little from the seat
-    this.yaw = THREE.MathUtils.clamp(this.yaw - inp.look.x, -1.3, 1.3); this.pitch = THREE.MathUtils.clamp(this.pitch - inp.look.y, -1.05, 0.45);
-    g.camera.position.copy(this.camRig); g.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ');
+    this.yaw = THREE.MathUtils.clamp(this.yaw - inp.look.x, -1.3, 1.3); this.pitch = THREE.MathUtils.clamp(this.pitch - inp.look.y, -1.15, 0.45);
+    { const k = THREE.MathUtils.smoothstep(-this.pitch, 0.45, 1.1); g.camera.position.set(this.camRig.x, this.camRig.y - 0.1 * k, this.camRig.z - 0.3 * k); } /* lean forward to look down into the footwell */ g.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ');
     // walkie comes up to the mouth when the player talks, rests on the knee otherwise
     const up = this.speaking > 0 ? 1 : 0; this.speaking -= dt; this.wk = (this.wk || 0) + (up - (this.wk || 0)) * Math.min(1, dt * 3);
     // keep the wheel hand's forearm running back to the driver's right elbow while the wheel turns
