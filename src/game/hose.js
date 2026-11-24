@@ -1,5 +1,6 @@
 // First-person forestry hose: pistol-grip fog nozzle on 1.5" yellow forestry hose, held in both hands (key 3 / HOSE).
 import * as THREE from 'three';
+import { addSleeve } from './sleeve.js';
 import { buildHand, poseHand, HAND_POSES, aimForearm } from '../hands.js';
 import { basisQuat } from '../viewmodel.js';
 import { radialSprite } from '../textures.js';
@@ -33,7 +34,7 @@ export class HoseVM {
     // hands
     this.rh = buildHand('R'); nz.add(this.rh); poseHand(this.rh, HAND_POSES.gripR);
     this.rh.position.set(0.018, -0.03, 0.035); this.rh.quaternion.copy(basisQuat(V(1, 0.1, 0.25), V(-0.1, -0.35, -0.93)));
-    this.lh = buildHand('L'); nz.add(this.lh); poseHand(this.lh, HAND_POSES.fistTorch);
+    this.lh = buildHand('L'); nz.add(this.lh); poseHand(this.lh, HAND_POSES.fistTorch); addSleeve(this.rh, { len: 0.75 }); addSleeve(this.lh, { len: 0.75 });
     this.lh.position.set(-0.034, 0.012, -0.11); this.lh.quaternion.copy(basisQuat(V(-0.55, 0.83, 0.05), V(0.85, 0.35, -0.38)));
     this.g.traverse(o => { if (o.isMesh) { o.frustumCulled = false; o.castShadow = false; } });
     this.base = V(0.11, -0.13, -0.38);

@@ -134,6 +134,20 @@ body.touchui #stamina{bottom:calc(150px + env(safe-area-inset-bottom))}
 #ammoPop{position:absolute;right:max(22px,env(safe-area-inset-right));bottom:calc(max(20px,env(safe-area-inset-bottom)) + 30px);font:700 15px monospace;color:#ffd27a;text-shadow:0 1px 3px #000;opacity:0;transition:opacity .25s,transform .6s;pointer-events:none;letter-spacing:1px}
 #ammoPop.on{opacity:1;transform:translateY(-10px)}
 body.touchui #ammoPop{right:calc(160px + env(safe-area-inset-right));bottom:calc(112px + env(safe-area-inset-bottom))}
-#mapView{position:fixed;inset:0;z-index:6;background:rgba(0,0,0,.82);display:flex;flex-direction:column;align-items:center;justify-content:center}
+#mapView{position:fixed;inset:0;z-index:45;pointer-events:auto;touch-action:manipulation;cursor:pointer;background:rgba(0,0,0,.82);display:flex;flex-direction:column;align-items:center;justify-content:center}
 #mapView.hidden{display:none}
 #mapCanvas{width:min(86vmin,760px);height:min(86vmin,760px);box-shadow:0 8px 40px #000}
+
+#mapCanvas{max-width:min(92vw,82vh);max-height:min(92vw,82vh);width:auto;height:auto;pointer-events:none}
+#mapClose{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);right:calc(env(safe-area-inset-right,0px) + 14px);z-index:46;min-width:120px;min-height:56px;padding:10px 22px;font:bold 20px/1 'Courier New',monospace;color:#fff;background:#b3261e;border:3px solid #fff;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.7);pointer-events:auto;touch-action:manipulation;cursor:pointer;letter-spacing:1px}
+#mapHint{pointer-events:none}
+
+/* v7 field kit HUD + FLARE button */
+#tFlare{width:50px;height:50px;right:calc(20px + env(safe-area-inset-right));bottom:calc(166px + env(safe-area-inset-bottom));font-size:10px;color:#ff8a70;border-color:rgba(255,90,60,.6)}
+#touch.intro #tFlare{display:none}
+#kit{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(16px,env(safe-area-inset-bottom));font:600 12px monospace;color:#d8d0bc;opacity:.75;text-shadow:0 1px 3px #000;display:flex;gap:12px;align-items:center;pointer-events:none}
+body.touchui #kit{left:50%;transform:translateX(-50%);bottom:calc(6px + env(safe-area-inset-bottom))}
+#kitBat{display:inline-block;width:26px;height:10px;border:1.5px solid #d8d0bc;border-radius:2px;position:relative}
+#kitBat:after{content:"";position:absolute;right:-4px;top:2px;width:2px;height:4px;background:#d8d0bc}
+#kitBatBar{position:absolute;left:1px;top:1px;bottom:1px;background:#9fd27a;display:block}
+#kitBat.low #kitBatBar{background:#ff5a3a}

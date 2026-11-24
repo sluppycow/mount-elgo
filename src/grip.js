@@ -482,3 +482,84 @@ export function solveWalkie(h, opt = {}) {
   const out = { p: h.position.clone(), q: h.quaternion.clone(), pose: clonePose(pose), report };
   G.remove(h); if (par) par.add(h); return out;
 }
+
+// ---------- v7: .308 bolt rifle (rifle.js frame: bore y=0, muzzle -Z, +X right) ----------
+// Right hand: palm wrapped round the pistol grip behind the guard, web high under the stock wrist, thumb over the top
+// of the wrist onto the left side, index pad on the trigger, middle/ring/pinky curled round the front strap.
+// Left hand: forend cradled in the palm ahead of the magazine, fingers up the right side, thumb along the left side.
+// Bolt hand: thumb + index/middle closed round the bolt knob (solved relative to the knob at rest).
+export function solveRifleGrip(rh, lh, POSES, sdf, O = {}) {
+  const T0 = performance.now(); const rep = {}; const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const ov = (typeof window !== 'undefined' && window.RG) || {}; const P = (k, d) => (ov[k] ? V(...ov[k]) : d);
+  const rPar = rh.parent, lPar = lh.parent; const backDir = (h) => V(0, 1, 0).applyQuaternion(h.quaternion).normalize();
+  const obst = (p) => sdf(p.x, p.y, p.z);
+  // front strap z at height y (x = 0)
+  const front = (y) => { for (let z = 0.07; z < 0.16; z += 0.0005) if (sdf(0, y, z, { noGuard: 1, noTrigger: 1, noBolt: 1 }) < 0) return z; return 0.1; };
+  // ---------------- RIGHT ----------------
+  const LR = landmarksLocal(rh);
+  const A = [LR.wrist, LR.index, LR.middle, LR.ring, LR.pinky, LR.web];
+  const mx = 0.0395, mdz = 0.014; const ys = [-0.064, -0.081, -0.098, -0.114];
+  const B = [P('wrist', V(-0.006, -0.112, 0.222)), ...ys.map((y, i) => V(mx - (i === 3 ? 0.004 : i === 0 ? 0.002 : 0), y, front(y) + mdz + i * 0.002)), P('web', V(0.012, -0.05, 0.168))];
+  if (ov.ofs) B.forEach(b => b.add(V(...ov.ofs)));
+  const fr = fitRigid(A, B, [1.0, 1.4, 1.2, 1.0, 0.8, 2.0]);
+  G.add(rh); rh.position.copy(fr.t); rh.quaternion.copy(fr.q);
+  rep.fitR = A.map((a, i) => [a.clone().applyQuaternion(fr.q).add(fr.t).toArray().map(x => +x.toFixed(3)), B[i].toArray().map(x => +x.toFixed(3))]);
+  const pr = clonePose(POSES.gripR); pr.wrist = [0, 0, 0]; pr.f = FN.map(() => [0.05, 0.05, 0.05]); pr.spread = [0, 0, 0, 0];
+  poseHand(rh, pr); const sampR = skinSamples(rh, 4);
+  const obstR = (p) => sdf(p.x, p.y, p.z);
+  rep.rPen0 = maxPenetration(rh, sampR, obstR).worst;
+  { let moved = 0; for (let it = 0; it < (ov.nopush ? 0 : 30) && moved < 0.014; it++) { const pen = maxPenetration(rh, sampR, obstR); if (!pen.dir || pen.worst > -0.003) break; const st = Math.min(0.001, -pen.worst * 0.5); rh.position.addScaledVector(backDir(rh), st); moved += st; } rep.rMoved = +moved.toFixed(4); }
+  rep.rPalm = maxPenetration(rh, sampR, obstR).worst;
+  for (const n of ['middle', 'ring', 'pinky']) { const m1 = chain(rh, n)[0]; const y = m1.y - 0.004; const fz = front(y); const r = RAD[n][1];
+    (rep.rWrap ||= {})[n] = wrapTo(rh, pr, n, obstR, V(0.004, y, fz - r * 0.9), V(-0.0165 - RAD[n][2] * 0.85, y - 0.002, fz + 0.016)); }
+  // index pad on the trigger blade (guard interior is free space)
+  const obstNoTrig = (p) => sdf(p.x, p.y, p.z, { noTrigger: 1 });
+  const trig = P('trig', V(0.002, -0.0635, 0.0545));
+  fitChain(rh, pr, () => { const pts = chain(rh, 'index'); const pad = pts[2].clone().lerp(pts[3], 0.55); return { tip: pad, pts }; }, trig, obstNoTrig, [['f', 0, 0], ['f', 0, 1], ['f', 0, 2], ['spread', 0]], RAD.index, 0.0002, null, 0.0002);
+  const triggerR = clonePose(pr);
+  // thumb over the top of the stock wrist, tip on the left side
+  const thT = P('thumb', V(-0.027, -0.045, 0.105)); const thumbVec = (h) => () => { const pts = chain(h, 'thumb'); return { tip: pts[3], pts }; };
+  pr.t = [0.6, 0.4, 0.2, 0.1, 0, 0]; pr.tRoll = 0;
+  fitChain(rh, pr, thumbVec(rh), thT, obstR, [['t', 0], ['t', 1], ['t', 2], ['t', 3], ['tRoll'], ['t', 4], ['t', 5]], RAD.thumb, 0.00002, P('thumbMid', V(-0.025, -0.05, 0.13)), 0.0003);
+  triggerR.t = pr.t.slice(); triggerR.tRoll = pr.tRoll; const gripR = clonePose(pr);
+  poseHand(rh, triggerR);
+  rep.rFingers = Object.fromEntries([...FN, 'thumb'].map(n => [n, +segHit(chain(rh, n), RAD[n], n === 'index' ? obstNoTrig : obstR).toFixed(4)]));
+  rep.rThumb = +chain(rh, 'thumb')[3].distanceTo(thT).toFixed(4); rep.rIdx = +chain(rh, 'index')[2].clone().lerp(chain(rh, 'index')[3], 0.55).distanceTo(trig).toFixed(4);
+  rep.rPenFinal = +maxPenetration(rh, sampR, obstNoTrig).worst.toFixed(4);
+  const R = { p: rh.position.clone(), q: rh.quaternion.clone(), pose: triggerR, grip: gripR };
+  // ---------------- BOLT (right hand on the knob) ----------------
+  const K = V(0.06, -0.039, 0.064);
+  const kSDF = (p) => Math.min(Math.hypot(p.x - K.x, p.y - K.y, (p.z - K.z) / 1.12) - 0.0115, sdf(p.x, p.y, p.z, { noBolt: 1 }) + 0.002);
+  const Bb = [P('bWrist', V(0.13, -0.07, 0.115)), V(0.074, -0.03, 0.074), V(0.077, -0.046, 0.08), V(0.078, -0.06, 0.087), V(0.077, -0.072, 0.095), P('bWeb', V(0.066, -0.026, 0.09))];
+  const fb = fitRigid(A, Bb, [1.0, 1.2, 1.2, 0.8, 0.6, 1.5]); rh.position.copy(fb.t); rh.quaternion.copy(fb.q);
+  const pb = clonePose(POSES.pinchL || POSES.gripR); pb.wrist = [0, 0, 0]; pb.f = FN.map(() => [0.05, 0.05, 0.05]); pb.spread = [0, 0, 0, 0]; poseHand(rh, pb);
+  for (let it = 0; it < 16; it++) { const pen = maxPenetration(rh, sampR, kSDF); if (!pen.dir || pen.worst > -0.0015) break; rh.position.addScaledVector(pen.dir, Math.min(0.003, -pen.worst * 0.6)); }
+  wrapFingers(rh, pb, ['index', 'middle'], kSDF); pb.f[2] = [1.25, 1.35, 0.7]; pb.f[3] = [1.35, 1.4, 0.7];
+  pb.t = [0.6, 0.4, 0.2, 0.1, 0, 0]; pb.tRoll = 0;
+  fitChain(rh, pb, thumbVec(rh), K.clone().add(V(-0.004, 0.011, 0.006)), kSDF, [['t', 0], ['t', 1], ['t', 2], ['t', 3], ['tRoll'], ['t', 4], ['t', 5]], RAD.thumb, 0.00002, null, 0.0003);
+  rep.bolt = { idx: +segHit(chain(rh, 'index'), RAD.index, kSDF).toFixed(4), th: +chain(rh, 'thumb')[3].distanceTo(K).toFixed(4) };
+  const Bo = { p: rh.position.clone(), q: rh.quaternion.clone(), pose: clonePose(pb), K };
+  poseHand(rh, triggerR); rh.position.copy(R.p); rh.quaternion.copy(R.q); if (rPar) rPar.add(rh);
+  // ---------------- LEFT (support) ----------------
+  const LL = landmarksLocal(lh); const A2 = [LL.wrist, LL.index, LL.middle, LL.ring, LL.pinky, LL.thumbMCP];
+  const zc = ov.lz ?? -0.215;
+  const B2 = [P('lWrist', V(-0.062, -0.088, zc + 0.03)), V(0.026, -0.058, zc - 0.03), V(0.029, -0.06, zc - 0.012), V(0.028, -0.061, zc + 0.006), V(0.025, -0.06, zc + 0.022), P('lThumbMCP', V(-0.012, -0.07, zc - 0.035))];
+  B2.forEach(b => b.add(V(...(ov.lofs || [0.004, 0.012, 0]))));
+  const fl = fitRigid(A2, B2, [0.8, 1.2, 1.0, 0.9, 0.7, 2.5]); G.add(lh); lh.position.copy(fl.t); lh.quaternion.copy(fl.q);
+  rep.fitL = A2.map((a, i) => [a.clone().applyQuaternion(fl.q).add(fl.t).toArray().map(x => +x.toFixed(3)), B2[i].toArray().map(x => +x.toFixed(3))]);
+  const pl = clonePose(POSES.supportL); pl.wrist = [0, 0, 0]; pl.f = FN.map(() => [0.05, 0.05, 0.05]); pl.spread = [0, 0, 0, 0]; poseHand(lh, pl);
+  const sampL = skinSamples(lh, 4); rep.lPen0 = maxPenetration(lh, sampL, obst).worst;
+  for (let it = 0; it < 24; it++) { const pen = maxPenetration(lh, sampL, obst); if (!pen.dir || pen.worst > -0.0012) break; lh.position.addScaledVector(pen.dir, Math.min(0.003, -pen.worst * 0.6)); }
+  rep.lPalm = maxPenetration(lh, sampL, obst).worst;
+  // fingers up the right side of the forend (tips below the receiver line)
+  wrapFingers(lh, pl, FN, obst);
+  const thL = P('lThumb', V(-0.023, -0.024, zc - 0.05));
+  pl.t = [0.5, 0.3, 0.1, 0.05, 0, 0]; pl.tRoll = 0;
+  fitChain(lh, pl, thumbVec(lh), thL, obst, [['t', 0], ['t', 1], ['t', 2], ['t', 3], ['tRoll'], ['t', 4], ['t', 5]], RAD.thumb, 0.00002, null, 0.0003);
+  rep.lFingers = Object.fromEntries([...FN, 'thumb'].map(n => [n, +segHit(chain(lh, n), RAD[n], obst).toFixed(4)]));
+  rep.lThumb = +chain(lh, 'thumb')[3].distanceTo(thL).toFixed(4); rep.lPenFinal = +maxPenetration(lh, sampL, obst).worst.toFixed(4);
+  const L = { p: lh.position.clone(), q: lh.quaternion.clone(), pose: clonePose(pl) };
+  if (lPar) lPar.add(lh);
+  rep.ms = Math.round(performance.now() - T0);
+  return { R, L, Bo, rep };
+}

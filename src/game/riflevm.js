@@ -5,7 +5,9 @@ import * as THREE from 'three';
 import { buildHand, poseHand, lerpPose, HAND_POSES, aimForearm } from '../hands.js';
 import { basisQuat } from '../viewmodel.js';
 import { flashSprite, radialSprite } from '../textures.js';
-import { buildRifle, buildRifleRound, rifleMaterials, RIFLE } from '../rifle.js';
+import { buildRifle, buildRifleRound, rifleMaterials, RIFLE, rifleSDF } from '../rifle.js';
+import { solveRifleGrip } from '../grip.js';
+import { addSleeve } from './sleeve.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const ease = (x) => x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x);
@@ -21,6 +23,7 @@ export class RifleVM {
     this.ammo = { mag: 0, chamber: 0, reserve: 0, cap: RIFLE.magCap }; this.ads = false; this.adsK = 0; this.busy = null; this.recoil = 0; this.recV = 0; this.lightOn = false; this.onEvent = null; this.casings = [];
     // hands
     this.rh = buildHand('R'); this.rifle.add(this.rh); this.lh = buildHand('L'); this.rifle.add(this.lh); this.placeHands();
+    this.sleeves = [addSleeve(this.rh, { len: 0.75 }), addSleeve(this.lh, { len: 0.75 })];
     // muzzle flash (sprite + side petals) and a local light on the hands
     this.flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: flashSprite(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false })); this.flash.visible = false; U.muzzle.add(this.flash); this.flash.position.z = -0.05;
     this.petal = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.08), new THREE.MeshBasicMaterial({ map: this.flash.material.map, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, toneMapped: false, side: THREE.DoubleSide }));
@@ -30,12 +33,17 @@ export class RifleVM {
     this.tip = new THREE.Object3D(); this.tip.position.set(0, 0, -0.075); U.light.add(this.tip);
     this.lens = U.light.children.find(o => o.isMesh && o.material && o.material.emissive) || null;
     this.g.traverse(o => { if (o.isMesh) { o.frustumCulled = false; o.castShadow = false; } });
-    this.hip = V(0.135, -0.128, -0.42); this.hipRot = V(0.02, 0.03, -0.05);
+    this.hip = V(0.16, -0.115, -0.66); this.hipRot = V(-0.04, 0.1, -0.05);
     this.adsPos = V(0, -RIFLE.scopeY, -RIFLE.eyeZ - 0.075);
   }
-  placeHands() { const H = RIFLE_HANDS;
-    poseHand(this.rh, HAND_POSES.triggerR); this.rh.position.copy(H.rPos); this.rh.quaternion.copy(basisQuat(H.rBack.clone().normalize(), H.rFwd.clone().normalize()));
-    poseHand(this.lh, HAND_POSES.supportL); this.lh.position.copy(H.lPos); this.lh.quaternion.copy(basisQuat(H.lBack.clone().normalize(), H.lFwd.clone().normalize())); }
+  placeHands() { // v7: anatomical grip solved against the rifle's signed distance field (grip.js solveRifleGrip)
+    const S = this.S = solveRifleGrip(this.rh, this.lh, HAND_POSES, rifleSDF); if (typeof window !== 'undefined') window.rifleGripReport = S.rep;
+    // bolt hand relative to the knob (so it rides the knob through lift / pull / push / drop)
+    this.rifle.updateMatrixWorld(true); const kM = this.rifle.matrixWorld.clone().invert().multiply(this.U.knob.matrixWorld);
+    this.boltRel = kM.clone().invert().multiply(new THREE.Matrix4().compose(S.Bo.p, S.Bo.q, V(1, 1, 1)));
+    this._m = new THREE.Matrix4(); this._kp = V(0, 0, 0); this._kq = new THREE.Quaternion(); this._ks = V(1, 1, 1); this._inv = new THREE.Matrix4();
+    this.rh.position.copy(S.R.p); this.rh.quaternion.copy(S.R.q); poseHand(this.rh, S.R.pose);
+    this.lh.position.copy(S.L.p); this.lh.quaternion.copy(S.L.q); poseHand(this.lh, S.L.pose); }
   emit(n) { this.onEvent && this.onEvent(n); }
   get total() { return this.ammo.mag + this.ammo.chamber + this.ammo.reserve; }
   show(on) { this.want = on; if (on) { this.g.visible = true; this.audio?.play('slideGrab', { vol: 0.4 }); } else { this.ads = false; } }
@@ -79,16 +87,20 @@ export class RifleVM {
     this.holder.position.set(p.x + (this.sx * 0.6 + bob) * sw, p.y + br + this.sy * 0.5 * sw - Math.abs(bob) * 0.5 - (1 - this.k) * 0.45 - tilt * 0.12, p.z + this.recoil * 0.06);
     this.holder.rotation.set(r.x + this.sy * 1.1 * sw + this.recoil * 0.14 - (1 - this.k) * 0.9 + tilt * 0.4, r.y + this.sx * 1.2 * sw, r.z - tilt * 1.4);
     // hands follow the action
-    const H = RIFLE_HANDS; const kn = U.knob.getWorldPosition(V(0, 0, 0)); this.rifle.worldToLocal(kn);
-    this.rh.position.copy(H.rPos).lerp(kn.clone().add(V(0.012, -0.012, 0.03)), rhOnBolt); poseHand(this.rh, lerpPose(HAND_POSES.triggerR, HAND_POSES.pinchL || HAND_POSES.gripR, rhOnBolt * 0.8));
-    const magP = U.mag.position.clone().add(V(-0.02, -0.05, 0.0)); this.lh.position.copy(H.lPos).lerp(magP, lhOnMag); poseHand(this.lh, lerpPose(HAND_POSES.supportL, HAND_POSES.holdMagL || HAND_POSES.supportL, lhOnMag));
+    const S = this.S; this.rifle.updateMatrixWorld(true);
+    if (rhOnBolt > 0.001) { this._inv.copy(this.rifle.matrixWorld).invert(); this._m.copy(this._inv).multiply(U.knob.matrixWorld).multiply(this.boltRel); this._m.decompose(this._kp, this._kq, this._ks);
+      // arc the hand up/back off the grip so the fingers never sweep through the stock
+      const k = rhOnBolt; this.rh.position.copy(S.R.p).lerp(this._kp, k); this.rh.position.y += Math.sin(k * Math.PI) * 0.03; this.rh.position.x += Math.sin(k * Math.PI) * 0.02;
+      this.rh.quaternion.copy(S.R.q).slerp(this._kq, k); poseHand(this.rh, lerpPose(S.R.pose, S.Bo.pose, Math.min(1, k * 1.15))); }
+    else { this.rh.position.copy(S.R.p); this.rh.quaternion.copy(S.R.q); poseHand(this.rh, S.R.pose); }
+    const magP = U.mag.position.clone().add(V(-0.03, -0.045, 0.03)); this.lh.position.copy(S.L.p).lerp(magP, lhOnMag); this.lh.quaternion.copy(S.L.q); poseHand(this.lh, lerpPose(S.L.pose, HAND_POSES.holdMagL || S.L.pose, lhOnMag));
     // flash
     if (this.flashT > 0) { this.flashT -= dt; this.flash.visible = this.petal.visible = true; U.muzzle.updateWorldMatrix(true, false); this.flashLight.position.setFromMatrixPosition(U.muzzle.matrixWorld); this.flashLight.intensity = 4; }
     else { this.flash.visible = this.petal.visible = false; this.flashLight.intensity = 0; }
     for (let i = this.casings.length - 1; i >= 0; i--) { const c = this.casings[i]; c.life += dt; c.v.y -= 9.8 * dt * 0.6; c.m.position.addScaledVector(c.v, dt); c.m.rotation.x += c.w.x * dt; c.m.rotation.y += c.w.y * dt; if (c.life > 0.9) { this.vm.scene.remove(c.m); this.casings.splice(i, 1); } }
     for (let i = this.smoke.length - 1; i >= 0; i--) { const s = this.smoke[i]; s.life += dt; s.s.position.addScaledVector(s.v, dt); s.s.scale.setScalar(0.05 + s.life * 0.25); s.s.material.opacity = 0.22 * (1 - s.life / s.max); if (s.life > s.max) { this.vm.scene.remove(s.s); s.s.material.dispose(); this.smoke.splice(i, 1); } }
     this.vm.camera.updateMatrixWorld(); this.g.updateMatrixWorld(true);
-    for (const [h, e] of [[this.rh, V(0.22, -0.5, 0.12)], [this.lh, V(-0.16, -0.45, -0.05)]]) aimForearm(h, this.vm.camera.localToWorld(e.clone()));
+    for (const [h, e] of [[this.rh, V(0.22, -0.5, 0.12)], [this.lh, V(-0.3, -0.4, -0.12)]]) aimForearm(h, this.vm.camera.localToWorld(e.clone()));
   }
   // weapon-light tip position / direction in the viewmodel camera's space
   lightLocal() { this.tip.updateWorldMatrix(true, false); const inv = this.vm.camera.matrixWorld.clone().invert(); const p = V(0, 0, 0).setFromMatrixPosition(this.tip.matrixWorld).applyMatrix4(inv);

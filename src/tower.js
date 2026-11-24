@@ -209,7 +209,7 @@ export function buildTower(scene, tex, Q) {
   for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + 0.4; const clip = box(0.025, 0.012, 0.03, brass, Math.cos(a) * 0.455, 0.912, Math.sin(a) * 0.455, ff); clip.rotation.y = -a; }
   T.bulletMeshes.push(top1);
   // desk with drawer along north wall
-  const desk = new THREE.Group(); desk.position.set(-1.25, 0, -H + 0.34); cab.add(desk);
+  const desk = new THREE.Group(); desk.position.set(-1.25, 0, -H + 0.34); cab.add(desk); T.desk = desk;
   box(1.5, 0.05, 0.62, ffWood, 0, 0.76, 0, desk); for (const [x, z] of [[-0.7, -0.26], [0.7, -0.26], [-0.7, 0.26], [0.7, 0.26]]) box(0.05, 0.74, 0.05, ffWood, x, 0.37, z, desk);
   box(0.5, 0.6, 0.55, ffWood, 0.45, 0.43, 0, desk);
   const drawer = new THREE.Group(); drawer.position.set(-0.25, 0.64, 0.02); desk.add(drawer);
@@ -222,7 +222,7 @@ export function buildTower(scene, tex, Q) {
   T.interact.push({ id: 'drawer', pos: new THREE.Vector3(-1.5, F + 0.65, -H + 0.62), r: 1.5, label: () => !T.drawer.open ? 'Open drawer' : (T.drawer.hasTorch ? 'Take flashlight' : 'Close drawer'),
     press: () => { const d = T.drawer; if (!d.open) { d.open = true; T.onSound && T.onSound('drawer'); } else if (d.hasTorch) { d.hasTorch = false; torchProp.visible = false; T.onTakeTorch && T.onTakeTorch(); T.onSound && T.onSound('pickup'); } else { d.open = false; T.onSound && T.onSound('drawer'); } } });
   // radio on desk
-  const radio = new THREE.Group(); radio.position.set(-0.8, 0.785, -0.08); desk.add(radio);
+  const radio = new THREE.Group(); radio.position.set(-0.33, 0.785, -0.07); desk.add(radio); // v7: squarely on the desktop (top y 0.785, x -0.51..-0.15 inside the -0.75..0.75 top)
   // base-station transceiver: olive crinkle steel case, glowing frequency dial + S-meter, knobs, toggles, desk mic on a coiled cord
   { const case_ = new THREE.MeshStandardMaterial({ color: 0x4a5038, roughness: 0.55, metalness: 0.45, normalMap: texOf(leatherMaps().n, { rep: [3, 3] }), normalScale: new THREE.Vector2(0.25, 0.25) });
     box(0.36, 0.15, 0.24, case_, 0, 0.075, 0, radio); box(0.37, 0.155, 0.012, new THREE.MeshStandardMaterial({ color: 0x1d1e1c, roughness: 0.5, metalness: 0.4 }), 0, 0.077, 0.121, radio);
@@ -235,13 +235,13 @@ export function buildTower(scene, tex, Q) {
     const knurl = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.45, metalness: 0.3 });
     for (const [x, y, r] of [[0.09, 0.1, 0.019], [0.145, 0.1, 0.014], [0.09, 0.04, 0.013], [0.145, 0.04, 0.013]]) { const k = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.08, 0.022, 24), knurl); k.rotation.x = Math.PI / 2; k.position.set(x, y, 0.135); radio.add(k); const sk = box(0.003, r * 0.9, 0.003, new THREE.MeshStandardMaterial({ color: 0xdddddd }), x, y + r * 0.45, 0.147, radio); }
     for (let i = 0; i < 4; i++) { const tg = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.004, 0.02, 8), new THREE.MeshStandardMaterial({ color: 0xd0d0d0, metalness: 1, roughness: 0.3 })); tg.rotation.x = Math.PI / 2 - 0.5; tg.position.set(-0.14 + i * 0.035, 0.03, 0.137); radio.add(tg); }
-    const mic = new THREE.Group(); mic.position.set(-0.3, 0.0, 0.08); radio.add(mic); const mp = [[0, 0], [0.04, 0], [0.04, 0.01], [0.012, 0.03], [0.01, 0.14], [0.025, 0.155], [0.028, 0.19], [0.0, 0.2]].map(p => new THREE.Vector2(p[0], p[1]));
+    const mic = new THREE.Group(); mic.position.set(0.27, 0.0, 0.08); radio.add(mic); const mp = [[0, 0], [0.04, 0], [0.04, 0.01], [0.012, 0.03], [0.01, 0.14], [0.025, 0.155], [0.028, 0.19], [0.0, 0.2]].map(p => new THREE.Vector2(p[0], p[1]));
     const micM = new THREE.Mesh(new THREE.LatheGeometry(mp, 24), new THREE.MeshStandardMaterial({ color: 0x2a2b2c, metalness: 0.6, roughness: 0.35 })); micM.castShadow = true; mic.add(micM);
-    const coil = []; for (let i = 0; i <= 160; i++) { const t = i / 160; const a = t * Math.PI * 2 * 22; coil.push(new THREE.Vector3(-0.3 + t * 0.26 + Math.cos(a) * 0.008, 0.012 + Math.sin(a) * 0.008 + Math.sin(t * Math.PI) * 0.01, 0.08 - t * 0.12)); }
+    const coil = []; for (let i = 0; i <= 160; i++) { const t = i / 160; const a = t * Math.PI * 2 * 22; coil.push(new THREE.Vector3(0.27 - t * 0.09 + Math.cos(a) * 0.008, 0.012 + Math.sin(a) * 0.008 + Math.sin(t * Math.PI) * 0.01, 0.08 - t * 0.12)); }
     const cord = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(coil), 600, 0.0022, 6), new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5 })); radio.add(cord); }
   const ant = beam(new THREE.Vector3(0.14, 0.14, -0.08), new THREE.Vector3(0.18, 0.55, -0.1), 0.006, 0.006, metal); radio.add(ant);
 
-  T.interact.push({ id: 'radio', pos: new THREE.Vector3(-2.05, F + 0.86, -H + 0.26), r: 1.6, label: () => 'Use radio', press: () => { T.onRadio && T.onRadio(); } });
+  T.interact.push({ id: 'radio', pos: new THREE.Vector3(-1.58, F + 0.86, -H + 0.27), r: 1.6, label: () => 'Use radio', press: () => { T.onRadio && T.onRadio(); } });
   // binoculars on desk
   const bino = new THREE.Group(); bino.position.set(0.3, 0.8, 0.1); bino.rotation.y = 0.5; desk.add(bino);
   const bm = new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: 0.6 });
@@ -285,14 +285,14 @@ export function buildTower(scene, tex, Q) {
   cab.add(beam(new THREE.Vector3(-0.9, top, 0.9), new THREE.Vector3(-0.9, top - 0.32, 0.9), 0.008, 0.008, metal));
   T.lantern = new THREE.PointLight(0xffa858, 6, 8, 1.6); T.lantern.position.set(-0.9, F + top - 0.47, 0.9); T.lantern.castShadow = Q.shadows; T.lantern.shadow.mapSize.set(512, 512); T.lantern.shadow.bias = -0.002; g.add(T.lantern); T.lanternGlobe = globe;
   // gooseneck desk lamp: warm pool of light on the desk (contrasts with the cool moonlight outside)
-  { const lamp = new THREE.Group(); lamp.position.set(-1.95, 0.785, -H + 0.2); cab.add(lamp);
+  { const lamp = new THREE.Group(); lamp.position.set(-1.88, 0.785, -H + 0.17); cab.add(lamp);
     const blk = new THREE.MeshStandardMaterial({ color: 0x1e3a2a, metalness: 0.5, roughness: 0.35 });
     const base = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.025, 28), blk); base.position.y = 0.012; base.castShadow = true; lamp.add(base);
     const neck = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0.02, 0), new THREE.Vector3(0.0, 0.22, 0.02), new THREE.Vector3(0.08, 0.38, 0.08), new THREE.Vector3(0.2, 0.4, 0.16)]), 30, 0.007, 8), metal); lamp.add(neck);
     const shade = new THREE.Mesh(new THREE.LatheGeometry([[0.012, 0.0], [0.03, -0.01], [0.06, -0.06], [0.075, -0.1], [0.072, -0.1], [0.057, -0.06], [0.028, -0.012], [0.01, -0.002]].map(p => new THREE.Vector2(p[0], p[1])), 32), new THREE.MeshStandardMaterial({ color: 0x1e3a2a, metalness: 0.5, roughness: 0.35, side: THREE.DoubleSide }));
     shade.position.set(0.2, 0.41, 0.16); shade.rotation.set(0.35, 0, -0.4); shade.castShadow = true; lamp.add(shade);
     const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.022, 14, 10), new THREE.MeshStandardMaterial({ color: 0xfff0d0, emissive: 0xffc070, emissiveIntensity: 4 })); bulb.position.set(0.19, 0.355, 0.175); lamp.add(bulb);
-    const sp = new THREE.SpotLight(0xffb060, 9, 4.5, 0.95, 0.75, 2); sp.position.set(-1.95 + 0.19, F + 0.785 + 0.35, -H + 0.2 + 0.175); sp.target.position.set(-1.3, F + 0.6, -H + 0.7); sp.castShadow = !!Q.shadows; sp.shadow.mapSize.set(512, 512); sp.shadow.bias = -0.002; g.add(sp); g.add(sp.target); T.deskLamp = sp; T.deskBulb = bulb; }
+    const sp = new THREE.SpotLight(0xffb060, 9, 4.5, 0.95, 0.75, 2); sp.position.set(-1.88 + 0.19, F + 0.785 + 0.35, -H + 0.17 + 0.175); sp.target.position.set(-1.3, F + 0.6, -H + 0.7); sp.castShadow = !!Q.shadows; sp.shadow.mapSize.set(512, 512); sp.shadow.bias = -0.002; g.add(sp); g.add(sp.target); T.deskLamp = sp; T.deskBulb = bulb; }
   // corkboard with the district fire map, notes and a duty roster on the west wall
   { const CK = corkMaps(); const board = new THREE.Group(); board.position.set(-H + 0.06, 0.62, 0.55); board.rotation.y = Math.PI / 2; cab.add(board);
     box(0.8, 0.5, 0.025, trim, 0, 0, -0.005, board); const ck = new THREE.Mesh(new THREE.PlaneGeometry(0.74, 0.44), new THREE.MeshStandardMaterial({ map: texOf(CK.map, { srgb: true, rep: [2, 1.2] }), normalMap: texOf(CK.normal, { rep: [2, 1.2] }), roughness: 1 })); ck.position.z = 0.0095; board.add(ck);

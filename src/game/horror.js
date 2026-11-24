@@ -63,8 +63,8 @@ export class Horror {
     this.falling.push({ m, v: side.clone().multiplyScalar(1.6 + Math.random()).add(V(0, 1.2, 0)), w: V(Math.random() * 18, Math.random() * 10, Math.random() * 18), t: 0, clinked: false, rifle });
     this.brass.push(m); if (this.brass.length > 36) { const o = this.brass.shift(); this.scene.remove(o); } }
   // ---- sprint stamina ----
-  stamina(dt, sprinting, moving) { if (sprinting && moving && !this.stamLock) { this.stam = Math.max(0, this.stam - dt / 7.5); this.stamRest = 0; if (this.stam <= 0) this.stamLock = true; }
-    else { this.stamRest += dt; if (this.stamRest > 0.9) this.stam = Math.min(1, this.stam + dt / 5.5); if (this.stamLock && this.stam > 0.35) this.stamLock = false; } return !this.stamLock; }
+  stamina(dt, sprinting, moving) { if (sprinting && moving && !this.stamLock) { this.stam = Math.max(0, this.stam - dt / 300); /* v7: 5 full minutes of sprinting (Aidyn) */ this.stamRest = 0; if (this.stam <= 0) this.stamLock = true; }
+    else { this.stamRest += dt; if (this.stamRest > 0.5) this.stam = Math.min(1, this.stam + dt / (moving ? 14 : 8)); /* fast recovery: full in ~8 s still, ~14 s walking */ if (this.stamLock && this.stam > 0.35) this.stamLock = false; } return !this.stamLock; }
   update(dt, ctx = {}) {
     for (let i = this.parts.length - 1; i >= 0; i--) { const p = this.parts[i]; p.life += dt; p.v.y -= p.g * dt; p.s.position.addScaledVector(p.v, dt); const k = p.life / p.max; p.s.scale.setScalar(p.sz * (1 + (p.grow || 0) * k * 3)); p.s.material.opacity = 1;
       if (p.life > p.max) { this.scene.remove(p.s); p.s.material.dispose(); this.parts.splice(i, 1); } else p.s.material.opacity = 1 - k; }

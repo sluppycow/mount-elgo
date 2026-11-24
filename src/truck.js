@@ -12,12 +12,12 @@ function mats() {
   const leatherN = texOf(L.n, { rep: [6, 6] }), leatherR = texOf(L.r, { rep: [6, 6] });
   const M = {};
   const TL = new THREE.TextureLoader(); const dashN = TL.load('assets/tex/mychief/mychief-dash-normal.jpg'); dashN.wrapS = dashN.wrapT = THREE.RepeatWrapping; dashN.repeat.set(6, 6); dashN.anisotropy = 8;
-  M.dash = new THREE.MeshPhysicalMaterial({ color: 0x2a2724, roughness: 0.78, normalMap: dashN, normalScale: new THREE.Vector2(0.6, 0.6), roughnessMap: leatherR, sheen: 0.25, sheenColor: new THREE.Color(0x605850), sheenRoughness: 0.7, side: THREE.DoubleSide });
-  M.vinyl = new THREE.MeshStandardMaterial({ color: 0x3b3833, roughness: 0.7, normalMap: leatherN, normalScale: new THREE.Vector2(0.5, 0.5), roughnessMap: leatherR });
+  M.dash = new THREE.MeshPhysicalMaterial({ color: 0x3a2c22, roughness: 0.78, normalMap: dashN, normalScale: new THREE.Vector2(0.6, 0.6), roughnessMap: leatherR, sheen: 0.25, sheenColor: new THREE.Color(0x605850), sheenRoughness: 0.7, side: THREE.DoubleSide });
+  M.vinyl = new THREE.MeshStandardMaterial({ color: 0x7a6248, roughness: 0.7, normalMap: leatherN, normalScale: new THREE.Vector2(0.5, 0.5), roughnessMap: leatherR });
   M.plastic = new THREE.MeshStandardMaterial({ color: 0x1c1d1f, roughness: 0.62, normalMap: texOf(L.n, { rep: [14, 14] }), normalScale: new THREE.Vector2(0.15, 0.15) });
-  M.trim = new THREE.MeshStandardMaterial({ color: 0x5a5650, roughness: 0.66, normalMap: texOf(L.n, { rep: [10, 10] }), normalScale: new THREE.Vector2(0.2, 0.2) });
+  M.trim = new THREE.MeshStandardMaterial({ color: 0x4a3c30, roughness: 0.66, normalMap: texOf(L.n, { rep: [10, 10] }), normalScale: new THREE.Vector2(0.2, 0.2) });
   M.fabric = new THREE.MeshStandardMaterial({ color: 0x5e5a52, roughness: 0.95, normalMap: texOf(F.n, { rep: [24, 24] }), normalScale: new THREE.Vector2(0.5, 0.5) });
-  M.seat = new THREE.MeshStandardMaterial({ color: 0x4a443c, roughness: 0.9, normalMap: texOf(F.n, { rep: [30, 30] }), normalScale: new THREE.Vector2(0.7, 0.7) });
+  M.seat = new THREE.MeshStandardMaterial({ color: 0x8a6f50, roughness: 0.9, normalMap: texOf(F.n, { rep: [30, 30] }), normalScale: new THREE.Vector2(0.7, 0.7) });
   M.chrome = new THREE.MeshStandardMaterial({ color: 0xd8dadc, roughness: 0.12, metalness: 1 });
   M.rubber = new THREE.MeshStandardMaterial({ color: 0x111213, roughness: 0.85 });
   M.mirror = new THREE.MeshStandardMaterial({ color: 0x59606a, roughness: 0.04, metalness: 1, envMapIntensity: 0.7 });
@@ -145,6 +145,7 @@ export function buildTruck(scene) {
   { const col = mesh(new THREE.CylinderGeometry(0.035, 0.05, 0.4, 20), M.plastic, wheel, 0, 0, -0.22); col.rotation.x = Math.PI / 2;
     mesh(rbox(0.11, 0.09, 0.12, 0.03, 3), M.plastic, wheel, 0, -0.01, -0.09);
     for (const s of [-1, 1]) { const st = new THREE.Group(); st.position.set(s * 0.05, 0.0, -0.085); st.rotation.set(0, 0, s * 0.25 - (s < 0 ? 0.2 : 0)); wheel.add(st); const sk = mesh(new THREE.CylinderGeometry(0.0055, 0.007, 0.14, 12), M.plastic, st, s * 0.07, 0, 0); sk.rotation.z = Math.PI / 2; mesh(new THREE.SphereGeometry(0.0085, 12, 10), M.plastic, st, s * 0.142, 0, 0); } }
+  upgradeTruck(T, M, R);
   T.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
   return { group: T, R, M };
 }
@@ -196,4 +197,58 @@ export function buildWalkie(ptt, side = -1) {
   g.userData = { led, ledGlow };
   g.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
   return g;
+}
+
+// v7: 1980s USFS pickup detail pass: walnut-grain dash applique, two-tone stitched/pleated vinyl bench, door cards with
+// armrests + window cranks + map pockets + carpeted kick panels, hood ribs, dash-mounted Forest Service radio with a
+// coiled hand mic, and the exterior (fenders, bed, wheels, bumpers, grille + sealed-beam headlights) for outside shots.
+function woodGrain() { return cnv(512, 128, (c, w, h) => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#5a3418'); g.addColorStop(1, '#4a2a12'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  for (let i = 0; i < 70; i++) { const y = Math.random() * h; c.strokeStyle = `rgba(${30 + Math.random() * 30},${14 + Math.random() * 12},6,${0.25 + Math.random() * 0.35})`; c.lineWidth = 0.6 + Math.random() * 2.2; c.beginPath(); c.moveTo(0, y);
+    for (let x = 0; x <= w; x += 16) c.lineTo(x, y + Math.sin(x * 0.012 + i) * 4 + Math.sin(x * 0.05 + i * 3) * 1.2); c.stroke(); } }); }
+function upgradeTruck(T, M, R) {
+  const wood = new THREE.MeshPhysicalMaterial({ map: texOf(woodGrain(), { srgb: true, rep: [2, 1] }), roughness: 0.35, clearcoat: 0.7, clearcoatRoughness: 0.2 });
+  const carpet = new THREE.MeshStandardMaterial({ color: 0x3a2e24, roughness: 1, normalMap: texOf(fabricMaps().n, { rep: [40, 40] }), normalScale: new THREE.Vector2(1, 1) });
+  const stitch = new THREE.MeshStandardMaterial({ color: 0xd8c8a8, roughness: 0.8 });
+  const darkV = new THREE.MeshStandardMaterial({ color: 0x4a3a2c, roughness: 0.75, normalMap: M.vinyl.normalMap, normalScale: new THREE.Vector2(0.5, 0.5) });
+  // walnut applique across the passenger dash face + under the cluster
+  for (const [x0, x1, y, z, rx] of [[-0.12, 0.8, 1.19, -0.548, -0.14], [-0.62, -0.14, 1.115, -0.535, -0.1]]) { const wdt = x1 - x0; const st = mesh(rbox(wdt, 0.055, 0.012, 0.005, 2), wood, T, (x0 + x1) / 2, y, z); st.rotation.x = rx;
+    mesh(rbox(wdt + 0.01, 0.006, 0.014, 0.002), M.chrome, T, (x0 + x1) / 2, y + 0.03, z + 0.002).rotation.x = rx; }
+  // dash-top Forest Service radio (bolted under the passenger dash lip) with a coiled hand mic hanging from a clip
+  { const r = new THREE.Group(); r.position.set(0.32, 0.86, -0.47); T.add(r); const steel = new THREE.MeshStandardMaterial({ color: 0x3a3e36, roughness: 0.5, metalness: 0.55 });
+    mesh(rbox(0.26, 0.07, 0.2, 0.008, 2), steel, r, 0, 0, 0); for (const s of [-1, 1]) mesh(rbox(0.012, 0.11, 0.16, 0.003), steel, r, s * 0.136, 0.03, 0);
+    const lab = cnv(256, 64, (c, w, h) => { c.fillStyle = '#121310'; c.fillRect(0, 0, w, h); c.fillStyle = '#ffb040'; c.font = 'bold 30px monospace'; c.fillText('168.625', 14, 42); c.fillStyle = '#c8c0a8'; c.font = '14px Arial'; c.fillText('USFS  KING', 160, 56); });
+    const lt = texOf(lab, { srgb: true }); mesh(new THREE.PlaneGeometry(0.12, 0.03), new THREE.MeshStandardMaterial({ map: lt, emissiveMap: lt, emissive: 0xffffff, emissiveIntensity: 0.8 }), r, -0.05, 0.005, 0.101);
+    for (const x of [0.05, 0.09]) mesh(new THREE.CylinderGeometry(0.011, 0.012, 0.016, 18).rotateX(Math.PI / 2), M.plastic, r, x, 0.005, 0.108);
+    const mic = new THREE.Group(); mic.position.set(-0.2, 0.95, -0.5); T.add(mic); mesh(rbox(0.055, 0.075, 0.03, 0.012, 3), M.plastic, mic, 0, 0, 0); mesh(rbox(0.012, 0.025, 0.008, 0.003), M.rubber, mic, -0.03, 0.01, 0);
+    mesh(rbox(0.03, 0.02, 0.012, 0.004), M.chrome, T, -0.2, 0.995, -0.517);
+    const coil = []; for (let i = 0; i <= 200; i++) { const t = i / 200, a = t * Math.PI * 2 * 26; const p = V(-0.2, 0.92, -0.5).lerp(V(0.2, 0.86, -0.4), t); p.y -= Math.sin(t * Math.PI) * 0.14; coil.push(p.add(V(Math.cos(a) * 0.008, Math.sin(a) * 0.008, 0))); }
+    mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(coil), 260, 0.0022, 5), M.rubber, T); }
+  // bench seat: pleated rolls with contrast stitching on the back + cushion, piping along the edges
+  for (let x = -0.66; x <= 0.661; x += 0.12) { const b = mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.5, 14, 1), M.seat, T, x, 1.3, 0.418); b.scale.z = 0.35;
+    const c = mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.48, 14, 1), M.seat, T, x, 1.055, 0.24); c.rotation.x = Math.PI / 2; c.scale.x = 1; c.scale.z = 1; c.scale.y = 1; c.scale.set(1, 1, 0.35);
+    mesh(new THREE.BoxGeometry(0.003, 0.5, 0.003), stitch, T, x + 0.06, 1.3, 0.414); mesh(new THREE.BoxGeometry(0.003, 0.003, 0.48), stitch, T, x + 0.06, 1.058, 0.24); }
+  for (const [y, z] of [[1.59, 0.42], [1.055, -0.05]]) mesh(new THREE.CylinderGeometry(0.012, 0.012, 1.5, 10).rotateZ(Math.PI / 2), darkV, T, 0, y, z);
+  // door cards: two-tone vinyl, walnut strip, padded armrest, pull handle, window crank, map pocket, carpeted kick panel
+  for (const s of [-1, 1]) { const x = s * 0.82; mesh(rbox(0.02, 0.24, 1.1, 0.01), carpet, T, x, 0.82, 0.12); mesh(rbox(0.016, 0.03, 1.0, 0.006), wood, T, x, 1.24, 0.1);
+    mesh(rbox(0.02, 0.12, 0.4, 0.01, 2), darkV, T, x - s * 0.005, 0.95, 0.0); // map pocket
+    mesh(rbox(0.09, 0.06, 0.42, 0.025, 3), darkV, T, x - s * 0.04, 1.1, 0.18); // armrest
+    const cr = new THREE.Group(); cr.position.set(x - s * 0.02, 1.12, -0.18); T.add(cr); cr.rotation.x = 0.6; // window crank
+    mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.012, 16).rotateZ(Math.PI / 2), M.chrome, cr, 0, 0, 0); mesh(rbox(0.008, 0.012, 0.075, 0.003), M.chrome, cr, -s * 0.008, 0, 0.035);
+    mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.035, 12).rotateZ(Math.PI / 2), M.plastic, cr, -s * 0.025, 0, 0.07);
+    mesh(rbox(0.03, 0.035, 0.1, 0.01), M.chrome, T, x - s * 0.03, 1.2, -0.12); } // pull handle
+  // hood ribs (two pressed ridges) + hood ornament-free USFS shield decal on the cowl
+  for (const x of [-0.32, 0.32]) { const c = new THREE.CatmullRomCurve3([V(x, 1.345, -1.0), V(x, 1.335, -1.9), V(x, 1.27, -2.82)]); mesh(new THREE.TubeGeometry(c, 30, 0.018, 8), M.paint, T).scale.y = 1; }
+  // ---------- exterior ----------
+  const bodyY = 0.98; mesh(rbox(1.92, 0.62, 2.0, 0.06, 3), M.paint, T, 0, bodyY, 0.15); // cab lower shell
+  mesh(rbox(1.92, 0.5, 2.3, 0.05, 2), M.paint, T, 0, 0.95, 2.45); for (const s of [-1, 1]) mesh(rbox(0.06, 0.2, 2.3, 0.02), M.paint, T, s * 0.93, 1.27, 2.45); // bed sides
+  mesh(rbox(1.92, 0.25, 0.06, 0.02), M.paint, T, 0, 1.2, 3.6); // tailgate top
+  const tireM = new THREE.MeshStandardMaterial({ color: 0x161616, roughness: 0.92 }), rimM = new THREE.MeshStandardMaterial({ color: 0xc9c9c2, roughness: 0.35, metalness: 0.8 });
+  for (const z of [-2.15, 2.45]) for (const s of [-1, 1]) { const w = new THREE.Group(); w.position.set(s * 0.86, 0.42, z); T.add(w);
+    const tg = new THREE.TorusGeometry(0.3, 0.13, 14, 32); tg.rotateY(Math.PI / 2); mesh(tg, tireM, w); mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.2, 24).rotateZ(Math.PI / 2), rimM, w);
+    const arch = mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.26, 24, 1, true, 0, Math.PI).rotateZ(Math.PI / 2), M.paint, T, s * 0.86, 0.45, z); arch.rotation.x = 0; arch.material = M.paint; }
+  mesh(rbox(2.0, 0.16, 0.14, 0.03), M.chrome, T, 0, 0.62, -2.92); mesh(rbox(2.0, 0.14, 0.12, 0.03), M.chrome, T, 0, 0.66, 3.66);
+  const grilleT = cnv(256, 64, (c, w, h) => { c.fillStyle = '#0c0c0c'; c.fillRect(0, 0, w, h); c.fillStyle = '#b8b8b0'; for (let y = 6; y < h; y += 12) c.fillRect(4, y, w - 8, 4); for (let x = 4; x < w; x += 42) c.fillRect(x, 0, 4, h); });
+  mesh(new THREE.PlaneGeometry(1.2, 0.3), new THREE.MeshStandardMaterial({ map: texOf(grilleT, { srgb: true }), metalness: 0.6, roughness: 0.4 }), T, 0, 0.98, -2.86).rotation.y = Math.PI;
+  for (const s of [-1, 1]) { mesh(rbox(0.22, 0.2, 0.04, 0.02), M.chrome, T, s * 0.72, 0.98, -2.86); const hl = mesh(new THREE.CircleGeometry(0.08, 24), new THREE.MeshStandardMaterial({ color: 0xfff6e0, emissive: 0xfff0c0, emissiveIntensity: 0.6, roughness: 0.1 }), T, s * 0.72, 0.98, -2.885); hl.rotation.y = Math.PI; }
+  mesh(rbox(1.92, 0.42, 0.04, 0.02), M.paint, T, 0, 0.98, -2.84); // nose panel behind the grille
 }

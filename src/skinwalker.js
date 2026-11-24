@@ -352,6 +352,7 @@ function poseRig(J, a, gnd) {
     const cu = a['cu' + S] ?? 0.6; for (let f = 0; f < 4; f++) { J[`f${S}${f}a`].rotation.x = -cu * (0.8 + f * 0.1); J[`f${S}${f}b`].rotation.x = -cu * 1.3; } }
 }
 // stride length per cycle (m) and the slowest cycle rate, per mode
+const SPD = 0.78; // v7: ~22% slower on every gait (walk, crawl, charge, gallop)
 const CYCLE = { idle: null, stalk: { len: 1.8, min: 0.45 }, crawl: { len: 1.05, min: 0.5 }, run: { len: 4.2, min: 1.4 }, gallop: { len: 4.6, min: 1.6 }, flinch: null };
 const LIMB = { // contact phase offsets: hind legs L/R, fore (hands) L/R
   stalk: [0, PI], run: [0, PI], crawl: [0, PI, PI, 0], gallop: [0, 0.45, PI + 0.2, PI + 0.65] };
@@ -404,7 +405,7 @@ export class Skinwalker {
   setState(s) { this.state = s; this.stateT = 0; this.hooks.state && this.hooks.state(s); }
   hide() { this.setState('off'); this.show(false); }
   // scripted path for the tutorial cutscene: it bursts out of the brush and gallops off on all fours
-  bolt(p0, p1, speed = 13) { this.place(p0, Math.atan2(p1.x - p0.x, p1.z - p0.z)); this.show(true); this.path = { a: p0.clone(), b: p1.clone(), speed }; this.setState('bolt'); this.anim = 'gallop'; this.speed = speed; this.dist = 15;
+  bolt(p0, p1, speed = 13) { this.place(p0, Math.atan2(p1.x - p0.x, p1.z - p0.z)); this.show(true); speed *= SPD; this.path = { a: p0.clone(), b: p1.clone(), speed }; this.setState('bolt'); this.anim = 'gallop'; this.speed = speed; this.dist = 15;
     this.syn('swBugle', 400, 1.0); this.syn('swCrash', 400, 1.0, 1.4); }
   // a 9mm hit: shriek, flinch, then scramble for the trees and stay away 25-40 s
   scare() { if (this.state === 'off' || this.state === 'flinch' || this.state === 'flee') return false; this.scareCount++; this.setState('flinch'); this.speed = 0;
@@ -425,12 +426,13 @@ export class Skinwalker {
       this.seenT = seen ? this.seenT + dt : Math.max(0, this.seenT - dt * 2); } else this.seenT = 0;
     const lit = (ctx.lit || 0) > 0.9;
     switch (this.state) {
-      case 'off': this.cool -= dt; if (ctx.active && this.cool <= 0 && P) { if (ctx.indoor && ctx.cabin) this.spawnProwl(ctx); else this.spawnStalk(P, ctx); } break;
+      case 'off': this.cool -= dt; if (ctx.towerWatch && this.cool <= 0 && P && ctx.tower) { this.spawnTower(ctx); break; } if (ctx.active && this.cool <= 0 && P) { if (ctx.indoor && ctx.cabin) this.spawnProwl(ctx); else this.spawnStalk(P, ctx); } break;
       case 'bolt': { const d = V(this.path.b.x - this.pos.x, 0, this.path.b.z - this.pos.z); const L = d.length(); if (L < 1) { this.hide(); break; } d.normalize(); this.heading = Math.atan2(d.x, d.z); this.pos.addScaledVector(d, Math.min(L, this.speed * dt)); target = 'gallop'; break; }
       case 'creep': { // low crawl out of the brush / through low cover, drifting sideways, nearly silent
         if (!ctx.active) { this.retreat(); break; } if (ctx.indoor && ctx.cabin) { this.setState('prowl'); this.ang = null; this.nextPeek = 3; break; }
-        const dir = toP.clone().normalize(); const mv = dir.clone().addScaledVector(V(-dir.z, 0, dir.x), this.side * 0.45).normalize(); const sp = this.closing ? 2.1 : 1.2;
+        const dir = toP.clone().normalize(); const mv = dir.clone().addScaledVector(V(-dir.z, 0, dir.x), this.side * 0.45).normalize(); const sp = (this.closing ? 2.1 : 1.2) * SPD;
         this.pos.addScaledVector(mv, sp * dt); this.heading = Math.atan2(toP.x, toP.z); this.speed = sp; target = 'crawl';
+        if (this.seenT > 0.4 && ctx.aimed && this.stateT > 0.8) { this.startEvade(P, ctx); break; }
         if (this.seenT > 1.1 && lit && this.stateT > 1) { this.startCharge(); break; }
         if (this.closing ? (dist < 10 || this.stateT > this.creepFor) : (dist < 17 || this.stateT > this.creepFor)) { if (this.closing && (ctx.aggr ?? 1) > 0) this.startCharge(); else { this.setState('stalk'); this.stalkFor = 6 + Math.random() * 5 - (ctx.aggr || 0) * 3; } }
         break; }
@@ -438,41 +440,68 @@ export class Skinwalker {
         if (!ctx.active) { this.retreat(); break; } if (ctx.indoor && ctx.cabin) { this.setState('prowl'); this.ang = null; this.nextPeek = 3 + Math.random() * 3; break; }
         if (this.pauseT > 0) this.pauseT -= dt; else if (Math.random() < dt * 0.12 || (this.seenT > 0.3 && !lit && Math.random() < dt * 2)) this.pauseT = 1.2 + Math.random() * 1.6;
         const want = 20 - Math.min(10, this.stateT * 0.6); const tang = V(-toP.z, 0, toP.x).normalize().multiplyScalar(this.side || 1); const radial = toP.clone().normalize().multiplyScalar(dist - want);
-        const mv = tang.multiplyScalar(1.6).add(radial.multiplyScalar(0.25)); let sp = Math.min(2.4, mv.length()); if (this.pauseT > 0) sp = 0; if (sp > 0.05) { mv.normalize(); this.pos.addScaledVector(mv, sp * dt); }
+        const mv = tang.multiplyScalar(1.6).add(radial.multiplyScalar(0.25)); if (this.coverGoal) { const cg = V(this.coverGoal.x - this.pos.x, 0, this.coverGoal.z - this.pos.z); if (cg.length() < 0.8) { this.coverGoal = null; this.pauseT = 1.5 + Math.random() * 2; } else mv.copy(cg.normalize().multiplyScalar(1.7)); }
+        else if (Math.random() < dt * 0.35) this.coverGoal = this.coverPoint(P, want, ctx);
+        let sp = Math.min(2.4 * SPD, mv.length()); if (this.pauseT > 0) sp = 0; if (sp > 0.05) { mv.normalize(); this.pos.addScaledVector(mv, sp * dt); }
         this.heading = Math.atan2(toP.x, toP.z); this.speed = sp; target = sp > 0.3 ? 'stalk' : 'idle';
         if (Math.random() < dt * 0.25) this.sfx('far-branch-snap-' + (1 + Math.floor(Math.random() * 4)), 0.8, { ref: 10 });
-        if (this.seenT > 1.4 && lit && this.stateT > 1.5 && (ctx.aggr ?? 1) > 0) { this.startCharge(); break; }
+        if (this.seenT > 0.35 && ctx.aimed && this.stateT > 0.8) { this.startEvade(P, ctx); break; }
+        if (this.seenT > 1.4 && lit && this.stateT > 1.5 && (ctx.aggr ?? 1) > 0) { if (Math.random() < 0.5) this.startCharge(); else this.startEvade(P, ctx); break; }
         if (this.stateT > (this.stalkFor || 9) && (ctx.aggr ?? 1) > 0) { if (dist > 13) { this.setState('creep'); this.closing = true; this.creepFor = 5 + Math.random() * 2; } else this.startCharge(); }
         else if (this.stateT > (this.stalkFor || 9) + 6) this.retreat();
         break; }
-      case 'charge': { if (!ctx.active) { this.retreat(); break; } const gal = this.stateT > 1.3 && dist > 3; const sp = 6.2 + 2.2 * (ctx.aggr ?? 0.5) + (gal ? 1.2 : 0); const rt = ctx.route && ctx.route(this.pos); const d = rt ? V(rt.x - this.pos.x, 0, rt.z - this.pos.z).normalize() : toP.clone().normalize(); this.heading = Math.atan2(d.x, d.z);
+      case 'charge': { if (!ctx.active) { this.retreat(); break; } const gal = this.stateT > 1.3 && dist > 3; const sp = (6.2 + 2.2 * (ctx.aggr ?? 0.5) + (gal ? 1.2 : 0)) * SPD; const rt = ctx.route && ctx.route(this.pos); const d = rt ? V(rt.x - this.pos.x, 0, rt.z - this.pos.z).normalize() : toP.clone().normalize(); this.heading = Math.atan2(d.x, d.z);
         this.pos.addScaledVector(d, Math.min(dist, sp * dt)); this.speed = sp; target = gal ? 'gallop' : 'run'; if (dist < 1.25) { this.setState('caught'); this.speed = 0; this.hooks.caught && this.hooks.caught(); } break; }
       case 'flinch': target = 'flinch'; if (this.stateT > 0.6) { this.setState('flee'); this.fleeDir = toP.clone().normalize().negate(); this.syn('swCrash', 200, 1.0, 1.8); this.crashT = 0.7; } break;
-      case 'flee': { const d = this.fleeDir || V(1, 0, 0); this.heading = Math.atan2(d.x, d.z); this.speed = 13; this.pos.addScaledVector(d, this.speed * dt); target = 'gallop';
+      case 'flee': { const d = this.fleeDir || V(1, 0, 0); this.heading = Math.atan2(d.x, d.z); this.speed = 13 * SPD; this.pos.addScaledVector(d, this.speed * dt); target = 'gallop';
         this.crashT -= dt; if (this.crashT < 0 && this.stateT < 3) { this.crashT = 0.6 + Math.random() * 0.5; this.syn('swCrash', 120, 0.7, 0.9); }
         if (this.stateT > 4 || dist > 70) { this.hide(); this.cool = 25 + Math.random() * 15; } break; }
-      case 'retreat': { const d = toP.clone().normalize().negate(); this.heading = Math.atan2(d.x, d.z); this.speed = 9; this.pos.addScaledVector(d, this.speed * dt); target = 'gallop'; if (this.stateT > 3 || dist > 60) { this.hide(); this.cool = 12 + Math.random() * 10; } break; }
+      case 'retreat': { if (ctx.towerWatch && this.stateT > 3) { this.hide(); this.cool = 20 + Math.random() * 15; break; } const d = toP.clone().normalize().negate(); this.heading = Math.atan2(d.x, d.z); this.speed = 9 * SPD; this.pos.addScaledVector(d, this.speed * dt); target = 'gallop'; if (this.stateT > 3 || dist > 60) { this.hide(); this.cool = 12 + Math.random() * 10; } break; }
       case 'stagger': { target = 'flinch'; this.speed = 0; if (this.knock) { this.pos.addScaledVector(this.knock, dt * 3); this.knock.multiplyScalar(Math.max(0, 1 - dt * 6)); }
-        if (this.stateT > 0.45) { const r = this.resume || 'stalk'; if (r === 'charge') this.setState('charge'); else if (r === 'prowl') this.setState('prowl'); else { this.setState('stalk'); this.stalkFor = 3; } } break; }
+        if (this.stateT > 0.45) { const r = this.resume || 'stalk'; if (r === 'charge') this.setState('charge'); else if (r === 'prowl') this.setState('prowl'); else this.startEvade(this.lastP, this.lastCtx || {}); } break; }
       // the player is inside the ranger cabin: circle it, scratch the walls, knock, and stop at the windows to look in
       case 'prowl': case 'peek': { const C = ctx.cabin; if (!C || !ctx.active) { this.retreat(); break; }
         if (!ctx.indoor) { if (dist < 14 && (ctx.aggr ?? 1) > 0) this.startCharge(); else { this.setState('stalk'); this.stalkFor = 4; } break; }
         if (ctx.doorOpen && this.stateT > 1.2 && (ctx.aggr ?? 1) > 0) { this.startCharge(); break; }
         if (this.state === 'peek') { const w = this.win; target = 'idle'; this.speed = 0; this.pos.lerp(V(w.outW.x, this.pos.y, w.outW.z), Math.min(1, dt * 2)); this.heading = w.yaw + Math.PI;
           this.eyeGlow = 1; if (this.stateT > this.peekFor || (this.seenT > 1.0 && lit)) { this.eyeGlow = 0; this.setState('prowl'); this.nextPeek = 5 + Math.random() * 6; this.hooks.prowl && this.hooks.prowl('leave', this.pos); } break; }
+        if (this.forceWin) { const w = this.forceWin; const d2 = V(w.outW.x - this.pos.x, 0, w.outW.z - this.pos.z); if (d2.length() < 0.6) { this.forceWin = null; this.win = w; this.setState('peek'); this.peekFor = 3 + Math.random() * 2; this.hooks.prowl && this.hooks.prowl('peek', w.cW); break; }
+          d2.normalize(); this.pos.addScaledVector(d2, 1.8 * SPD * dt); this.heading = Math.atan2(d2.x, d2.z); this.speed = 1.8 * SPD; target = 'stalk'; break; }
         const cx = C.center.x, cz = C.center.z; this.ang = (this.ang ?? Math.atan2(this.pos.x - cx, this.pos.z - cz)) + dt * 0.32 * (this.side || 1);
         const R = 5.6 + Math.sin(this.t * 0.4) * 0.6; const goal = V(cx + Math.sin(this.ang) * R, 0, cz + Math.cos(this.ang) * R); const d = goal.sub(this.pos).setY(0); const L = d.length();
-        const sp = Math.min(2.2, L * 2); if (L > 0.05) { d.normalize(); this.pos.addScaledVector(d, sp * dt); this.heading = Math.atan2(d.x, d.z); } this.speed = sp; target = sp > 1.6 ? 'crawl' : 'stalk';
+        const sp = Math.min(2.2 * SPD, L * 2); if (L > 0.05) { d.normalize(); this.pos.addScaledVector(d, sp * dt); this.heading = Math.atan2(d.x, d.z); } this.speed = sp; target = sp > 1.6 * SPD ? 'crawl' : 'stalk';
         this.nextPeek = (this.nextPeek ?? 4) - dt; this.evT = (this.evT ?? 2) - dt;
         if (this.evT < 0) { this.evT = 2.5 + Math.random() * 4; const k = Math.random(); this.hooks.prowl && this.hooks.prowl(k < 0.45 ? 'scratch' : k < 0.7 ? 'knock' : k < 0.85 ? 'breath' : 'step', this.pos); }
         if (this.nextPeek < 0 && C.windows.length) { // nearest window to where it is now
           let best = null, bd = 1e9; for (const w of C.windows) { const q = (w.outW.x - this.pos.x) ** 2 + (w.outW.z - this.pos.z) ** 2; if (q < bd) { bd = q; best = w; } }
           if (bd < 16) { this.win = best; this.setState('peek'); this.peekFor = 2.2 + Math.random() * 2.2; this.hooks.prowl && this.hooks.prowl('peek', best.cW); } else this.nextPeek = 0.5; }
         break; }
+      case 'evade': { // break line of sight: sprint sideways to the nearest tree trunk away from the player's aim, then resume the hunt from a new angle
+        const g2 = this.evadeTo; const d2 = V(g2.x - this.pos.x, 0, g2.z - this.pos.z); const L2 = d2.length(); const sp = 4.6 * SPD;
+        if (L2 > 0.5) { d2.normalize(); this.pos.addScaledVector(d2, Math.min(L2, sp * dt)); this.heading = Math.atan2(d2.x, d2.z); this.speed = sp; target = 'run'; } else { this.speed = 0; target = 'idle'; }
+        if (!ctx.active && !ctx.indoor) { this.retreat(); break; }
+        if (this.stateT > 3.2 || (L2 <= 0.5 && this.stateT > 1.6)) { this.side = -(this.side || 1); this.seenT = 0; this.coverGoal = null; if (ctx.indoor && ctx.cabin) { this.setState('prowl'); this.ang = null; this.nextPeek = 4; } else { this.setState('stalk'); this.stalkFor = 4 + Math.random() * 3; } }
+        break; }
+      case 'batter': { // the cabin door is bolted: rattle, pound, scratch for several seconds, then go and look in through a window
+        const C = ctx.cabin; target = 'idle'; this.speed = 0; if (C) { this.pos.lerp(V(C.doorOut.x, this.pos.y, C.doorOut.z), Math.min(1, dt * 3)); this.heading = Math.atan2(C.doorLatch.x - this.pos.x, C.doorLatch.z - this.pos.z); }
+        this.batT = (this.batT ?? 0) - dt; if (this.batT <= 0) { this.batT = 0.35 + Math.random() * 0.5; const k = this.stateT < 1.6 ? 'rattle' : Math.random() < 0.55 ? 'pound' : Math.random() < 0.6 ? 'scratch' : 'rattle'; this.hooks.batter && this.hooks.batter(k); }
+        if (this.stateT > this.batterFor && C) { let best = null, bd = 1e9; for (const w of C.windows) { const q = (w.outW.x - this.pos.x) ** 2 + (w.outW.z - this.pos.z) ** 2; if (q < bd) { bd = q; best = w; } } this.forceWin = best; this.setState('prowl'); this.ang = null; this.nextPeek = 99; }
+        break; }
+      case 'tower': { // the player is up in the tower cab: circle the base, stop and stare up at the windows
+        if (!ctx.towerWatch) { this.retreat(); break; } const tw = ctx.tower; if (this.pauseT > 0) { this.pauseT -= dt; this.speed = 0; target = 'idle'; this.eyeGlow = 1; this.heading = Math.atan2(tw.x - this.pos.x, tw.z - this.pos.z); }
+        else { this.eyeGlow = 0; this.ang = (this.ang ?? 0) + dt * 0.18 * (this.side || 1); const R2 = 11 + Math.sin(this.t * 0.3) * 2; const goal = V(tw.x + Math.sin(this.ang) * R2, 0, tw.z + Math.cos(this.ang) * R2); const d2 = goal.sub(this.pos).setY(0); const L2 = d2.length(); const sp = Math.min(1.9 * SPD, L2 * 2);
+          if (L2 > 0.05) { d2.normalize(); this.pos.addScaledVector(d2, sp * dt); this.heading = Math.atan2(d2.x, d2.z); } this.speed = sp; target = sp > 0.3 ? 'stalk' : 'idle'; if (Math.random() < dt * 0.12) this.pauseT = 2.5 + Math.random() * 2.5; }
+        if (this.stateT > 45) { this.retreat(); } break; }
       case 'caught': target = 'idle'; break;
       case 'watch': target = 'idle'; this.heading = Math.atan2(toP.x, toP.z); break;
     }
     if (this.state === 'off') return;
+    this.lastP = P; this.lastCtx = ctx;
+    if (ctx.flares && this.state !== 'caught' && this.state !== 'bolt') for (const f of ctx.flares) { // flare light: hiss, then skirt its edge (it will not step into the red light)
+      const dx = this.pos.x - f.p.x, dz = this.pos.z - f.p.z; const L3 = Math.hypot(dx, dz);
+      if (L3 < f.r + 2.5 && (this.hissT ?? 0) <= 0) { this.hissT = 6; this.hooks.hiss && this.hooks.hiss(this.pos.clone()); if (this.state === 'charge' && P && Math.hypot(P.x - f.p.x, P.z - f.p.z) < f.r) { this.setState('stalk'); this.stalkFor = 5; } }
+      if (L3 < f.r) { const k = f.r / Math.max(L3, 0.01); this.pos.x = f.p.x + dx * k; this.pos.z = f.p.z + dz * k; if (this.state === 'peek') this.setState('prowl'); } }
+    this.hissT = (this.hissT ?? 0) - dt;
     if (ctx.avoid && this.state !== 'charge') ctx.avoid(this.pos); const fy = ctx.floorAt ? ctx.floorAt(this.pos.x, this.pos.z) : null; this.pos.y = fy ?? height(this.pos.x, this.pos.z); this.model.position.copy(this.pos);
     let dh = this.heading - this.model.rotation.y; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); this.model.rotation.y += dh * Math.min(1, dt * (target === 'crawl' ? 5 : 10));
     // head tracks the player (relative to the body), within the neck's reach
@@ -487,6 +516,16 @@ export class Skinwalker {
     this.hp = 2; this.blend = 1; this.cur = null; this.sfx('far-branch-snap-' + (1 + Math.floor(Math.random() * 4)), 1.0, { ref: 12 }); this.hooks.spotted && this.hooks.spotted();
   }
   retreat() { if (this.state === 'off') return; this.setState('retreat'); }
+  // nearest tree trunk that keeps it at ~want metres from the player, flanking round to its current side
+  coverPoint(P, want, ctx) { const T = ctx.trees; if (!T || !P) return null; const a0 = Math.atan2(this.pos.x - P.x, this.pos.z - P.z); let best = null, bs = 1e9;
+    for (let i = 0; i < T.length; i++) { const t = T[i]; const dx = t[0] - this.pos.x, dz = t[2] - this.pos.z; if (Math.abs(dx) > 16 || Math.abs(dz) > 16) continue; const dp = Math.hypot(t[0] - P.x, t[2] - P.z); if (Math.abs(dp - want) > 5) continue;
+      let da = Math.atan2(t[0] - P.x, t[2] - P.z) - a0; da = Math.atan2(Math.sin(da), Math.cos(da)); if (da * (this.side || 1) < 0.08) continue; const sc = Math.hypot(dx, dz) + Math.abs(da - 0.4 * (this.side || 1)) * 4; if (sc < bs) { bs = sc; best = t; } }
+    if (!best) return null; const ox = best[0] - P.x, oz = best[2] - P.z, L = Math.hypot(ox, oz) || 1; return V(best[0] + ox / L * 0.9, 0, best[2] + oz / L * 0.9); }
+  startEvade(P, ctx) { if (!P) { this.setState('stalk'); this.stalkFor = 3; return; } const toS = V(this.pos.x - P.x, 0, this.pos.z - P.z).normalize(); const tang = V(-toS.z, 0, toS.x).multiplyScalar(-(this.side || 1));
+    const cp = this.coverPoint(P, Math.max(14, this.dist + 2), ctx); this.evadeTo = cp || this.pos.clone().addScaledVector(tang, 7).addScaledVector(toS, 3); this.setState('evade'); this.syn('swTwig', 40, 0.7); }
+  batterDoor() { if (this.state === 'batter') return; this.setState('batter'); this.batterFor = 4.5 + Math.random() * 2.5; this.batT = 0; }
+  spawnTower(ctx) { const tw = ctx.tower; const a = Math.random() * 6.28; this.ang = a; this.place(V(tw.x + Math.sin(a) * 13, 0, tw.z + Math.cos(a) * 13), a + Math.PI); this.show(true); this.hp = 2; this.side = Math.random() < 0.5 ? -1 : 1; this.pauseT = 0;
+    this.setState('tower'); this.anim = this.prevAnim = 'stalk'; this.blend = 1; this.cur = null; this.sfx('far-branch-snap-' + (1 + Math.floor(Math.random() * 4)), 1.0, { ref: 14 }); }
   spawnProwl(ctx) { const C = ctx.cabin; const a = Math.random() * 6.28; this.ang = a; this.place(V(C.center.x + Math.sin(a) * 6, 0, C.center.z + Math.cos(a) * 6), a + Math.PI); this.show(true); this.hp = 2;
     this.side = Math.random() < 0.5 ? -1 : 1; this.setState('prowl'); this.nextPeek = 4 + Math.random() * 4; this.anim = this.prevAnim = 'stalk'; this.blend = 1; this.cur = null; this.hooks.prowl && this.hooks.prowl('arrive', this.pos); }
   animate(dt, target, ctx = {}) {

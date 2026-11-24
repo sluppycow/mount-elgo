@@ -6,6 +6,7 @@ import { buildHand, poseHand, aimForearm, skinMaterials } from '../hands.js';
 import { buildTruck, buildWalkie, GAUGE } from '../truck.js';
 import { solveWalkie } from '../grip.js';
 import { fabricMaps, texOf } from '../procedural.js';
+import { addSleeve } from './sleeve.js';
 let _grip = null; function walkieGrip(h) { return _grip || (_grip = solveWalkie(h)); }
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -52,13 +53,7 @@ export class Intro {
     const rh = this.rh = rig(vm); const th = Math.PI / 5; const rp = V(Math.cos(th) * Rw, Math.sin(th) * Rw, 0);
     rh.position.copy(rp); wheel.add(rh); orient(rh, V(-Math.sin(th), Math.cos(th), 0), V(Math.cos(th) * 0.35, Math.sin(th) * 0.35, 1).normalize(), bd);
     rh.traverse(o => { if (o.isMesh) o.receiveShadow = true; }); this.rhHand = rh.children[0];
-    { // work-shirt sleeves from mid-forearm to the elbow (hides the forearm cut, reads as a real driver)
-      const sm = new THREE.MeshStandardMaterial({ color: 0x55603f, roughness: 0.95, normalMap: texOf(fabricMaps().n, { rep: [6, 10] }), normalScale: new THREE.Vector2(0.6, 0.6) });
-      const mk = () => { const gS = new THREE.Group(); const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.056, 0.047, 1, 18, 1, true), sm); tube.position.y = 0.5; gS.add(tube);
-        const cuff = new THREE.Mesh(new THREE.TorusGeometry(0.046, 0.007, 8, 20), sm); cuff.rotation.x = Math.PI / 2; gS.add(cuff); sm.side = THREE.DoubleSide;
-        gS.traverse(o => { if (o.isMesh) { o.frustumCulled = false; o.receiveShadow = true; } }); game.scene.add(gS); return gS; };
-      this.sleeves = [mk()]; // right arm only: the left forearm already runs out of frame
-    }
+    // v7 arms: ranger-jacket sleeves (canvas twill, cuff, folds) on BOTH arms, forearm + upper arm to the shoulder (built below)
     skinMaterials().skin.color.setRGB(0.6, 0.48, 0.4); // low golden-hour sun straight through the windshield: keep the skin from clipping to white (restored in finish)
     // left hand + radio: solved grip (palm on the back, fingers round the side onto the front edge, thumb on the PTT)
     const hand = buildHand('R'); const sol = walkieGrip(hand); poseHand(hand, sol.pose); hand.position.copy(sol.p); hand.quaternion.copy(sol.q);
@@ -74,6 +69,8 @@ export class Intro {
       lh.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xr, front, up)); }
     this.lhBase = V(-0.15, -0.2, -0.36); this.lhGroup.position.copy(this.lhBase);
     this.handL = hand;
+    this.sleeves = [addSleeve(this.rhHand, { z0: 0.03, len: 0.27, upperParent: game.camera }), addSleeve(hand, { z0: 0.03, len: 0.27, upperParent: game.camera })];
+    this.shoulders = [V(0.21, -0.3, 0.14), V(-0.21, -0.3, 0.14)];
     this.camRig = V(-0.38, 1.74, 0.12); this.yaw = 0; this.pitch = -0.05;
     this.lines = data.lines.slice(); this.sfxOn = false;
   }
@@ -84,14 +81,17 @@ export class Intro {
   sAt(t) { const v0 = this.v0, T = this.T; if (t < T - 8) return v0 * t; const u = Math.min(8, t - (T - 8)); return v0 * (T - 8) + v0 * u - v0 * u * u / 16; }
   pointAt(s) { s = Math.max(0, Math.min(this.L, s)); let i = 1; while (i < this.cum.length - 1 && this.cum[i] < s) i++; const f = (s - this.cum[i - 1]) / Math.max(1e-6, this.cum[i] - this.cum[i - 1]); return this.path[i - 1].clone().lerp(this.path[i], f); }
   place(s, dt) {
-    const p = this.pointAt(s), a = this.pointAt(s + 7), b = this.pointAt(s - 3);
-    let dir = a.clone().sub(b); if (s > this.L - 6) dir = this.lastDir ? this.lastDir.clone() : dir; dir.y = 0; if (dir.lengthSq() < 1e-6) dir.set(0, 0, -1); dir.normalize(); this.lastDir = dir.clone();
-    const right = V(-dir.z, 0, dir.x); const pos = p.clone().addScaledVector(right, s > this.L - 20 ? 0.7 * (this.L - s) / 20 : 0.7);
-    const hh = height(pos.x, pos.z); const yGround = Math.min(Math.max(p.y, hh - 0.3), hh + 0.35);
-    const slope = (a.y - b.y) / Math.max(1, a.distanceTo(b));
-    const yaw = Math.atan2(-dir.x, -dir.z); const tgt = new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.atan(slope) * 0.9, yaw, 0, 'YXZ'));
+    // v7: dead-centre on the rendered road: same centreline polyline + the road mesh's height rule, heading from the local
+    // tangent (short symmetric look-ahead), wheels sampled at the axles so the body pitches/rolls with the gravel.
+    const p = this.pointAt(s), a = this.pointAt(s + 3.5), b = this.pointAt(s - 3.5);
+    let dir = a.clone().sub(b); if (s > this.L - 4) dir = this.lastDir ? this.lastDir.clone() : dir; dir.y = 0; if (dir.lengthSq() < 1e-6) dir.set(0, 0, -1); dir.normalize(); this.lastDir = dir.clone();
+    const roadY = (q) => { const hc = height(q.x, q.z); const yc = Math.min(Math.max(q.y, hc), hc + 0.35); return Math.min(Math.max(yc, hc - 0.25), hc + 0.3) + 0.05 + 0.05; };
+    const front = this.pointAt(s + 1.6), rear = this.pointAt(s - 1.6); const yF = roadY(front), yR = roadY(rear);
+    const pos = p.clone(); const yGround = (yF + yR) / 2 - 0.1;
+    const pitch = Math.atan2(yF - yR, 3.2);
+    const yaw = Math.atan2(-dir.x, -dir.z); const tgt = new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
     this.truck.position.set(pos.x, yGround + 0.15 + Math.sin(this.t * 7.1) * 0.006 * (s < this.L - 1 ? 1 : 0), pos.z);
-    if (dt === 0) this.truck.quaternion.copy(tgt); else this.truck.quaternion.slerp(tgt, Math.min(1, dt * 3));
+    if (dt === 0) this.truck.quaternion.copy(tgt); else this.truck.quaternion.slerp(tgt, Math.min(1, dt * 8));
     // the wheel follows the bend
     const turn = THREE.MathUtils.clamp((this.prevYaw === undefined ? 0 : ((yaw - this.prevYaw + Math.PI * 3) % (Math.PI * 2) - Math.PI)) / Math.max(dt, 1e-3) * 2.5, -1.2, 1.2); this.prevYaw = yaw;
     this.wheel.rotation.z += (turn - this.wheel.rotation.z) * Math.min(1, dt * 3);
@@ -115,9 +115,9 @@ export class Intro {
     // keep the wheel hand's forearm running back to the driver's right elbow while the wheel turns
     if (this.rhHand) { g.camera.updateMatrixWorld(); const elR = g.camera.localToWorld(V(0.5, -0.5, 0.3)); aimForearm(this.rhHand, elR);
       const elL = g.camera.localToWorld(V(-0.42, -0.55, 0.25));
-      for (const [k, h, el] of [[0, this.rhHand, elR]]) { const sl = this.sleeves[k]; const w = h.userData.bones.hand.getWorldPosition(V(0, 0, 0)); const d = h.userData.bones.forearm.getWorldPosition(V(0, 0, 0)).sub(w).normalize(); const L = 0.5;
-        const a = w.clone().addScaledVector(d, 0.1); sl.position.copy(a); sl.quaternion.setFromUnitVectors(V(0, 1, 0), d); sl.scale.set(1, Math.max(0.05, L - 0.1), 1); sl.children[1].scale.set(1, 1, 1 / Math.max(0.05, L - 0.1)); } }
+    }
     this.lhGroup.position.set(this.lhBase.x + this.wk * 0.05, this.lhBase.y + this.wk * 0.09, this.lhBase.z + this.wk * 0.06);
+    g.camera.updateMatrixWorld(true); for (let k = 0; k < 2; k++) this.sleeves[k].update(g.camera.localToWorld(this.shoulders[k].clone()));
     this.ledT = (this.ledT || 0) - dt; const W = this.walkie.userData; const rx = this.ledT > 0, tx = up > 0;
     W.led.material.color.set(tx ? 0xff3010 : rx ? 0x30ff50 : 0x0a140a); W.ledGlow.material.color.set(tx ? 0xff4020 : 0x40ff60); W.ledGlow.material.opacity = tx || rx ? 0.8 : 0;
     // gauges: speed / revs from the path speed
@@ -136,7 +136,7 @@ export class Intro {
     if (c.id === 'fade_black') { g.fadeTo(1, c.fade_duration_s || 2); setTimeout(() => this.finish(), (c.fade_duration_s || 2) * 1000 + 300); }
   }
   finish() {
-    skinMaterials().skin.color.setRGB(1.0, 0.8, 0.66); for (const sl of this.sleeves || []) this.g.scene.remove(sl);
+    skinMaterials().skin.color.setRGB(1.0, 0.8, 0.66); for (const sl of this.sleeves || []) { if (sl.upper) sl.upper.removeFromParent(); if (sl.elbow) sl.elbow.removeFromParent(); }
     if (this.done) return; this.done = true; const g = this.g; const a = g.audio;
     a.stopLoop('truck', 0.3); a.stopLoop('truckIdle', 0.3); a.birds(false); g.subtitle(null);
     for (const l of this.lines) l.said = true;

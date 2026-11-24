@@ -1,6 +1,7 @@
 // First-person viewmodel: pistol + hands + flashlight with a keyframed/procedural animation system.
 import * as THREE from 'three';
 import { buildGun, buildGunMaterials, buildMagazine, buildCasing, buildFlashlight, GUN_DIM } from './gun.js';
+import { addSleeve } from './game/sleeve.js';
 import { buildHand, poseHand, lerpPose, HAND_POSES, aimForearm } from './hands.js';
 import { flashSprite, radialSprite } from './textures.js';
 import { solveGrip, solveTorch } from './grip.js';
@@ -139,6 +140,7 @@ export class ViewModel {
     this.gripReport = solveGrip(this, VM, HAND_POSES); this.gripReport.torch = solveTorch(this, VM, HAND_POSES); if (typeof window !== 'undefined') window.gripReport = this.gripReport;
     
     poseHand(this.torchHand, HAND_POSES.fistTorch);
+    this.sleeves = [addSleeve(this.rh, { len: 0.75 }), addSleeve(this.lh, { len: 0.75 }), addSleeve(this.torchHand, { len: 0.75 })];
     // lights inside the viewmodel scene (driven by the world each frame)
     this.hemi = new THREE.HemisphereLight(0x8090b0, 0x201812, 0.3); this.scene.add(this.hemi);
     this.key = new THREE.DirectionalLight(0xffffff, 0.5); this.key.position.set(-1, 2, 1); this.scene.add(this.key); this.scene.add(this.key.target);

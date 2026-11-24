@@ -40,8 +40,9 @@
   <div id="tgtMark" style="display:none"></div>
   <div id="compass"><div id="compassStrip"></div><div id="compassTick"></div></div>
   <div id="stamina"><div id="staminaBar"></div></div>
+  <div id="kit"><span id="kitFlare"></span><span id="kitBat"><i id="kitBatBar"></i></span><span id="kitNotes"></span></div>
   <div id="ammoPop"></div>
-  <div id="mapView" class="hidden"><canvas id="mapCanvas" width="900" height="900"></canvas><p class="small" id="mapHint">Tap / click to close</p></div>
+  <div id="mapView" class="hidden"><button id="mapClose" aria-label="Close map">CLOSE &#x2715;</button><canvas id="mapCanvas" width="900" height="900"></canvas><p class="small" id="mapHint">Tap anywhere, or press Esc / E / M / Tab to close</p></div>
   <div id="progress"><div id="progressBar"></div><span id="progressText"></span></div>
   <div id="power"></div>
 </div>
@@ -52,6 +53,7 @@
   <div class="tb" id="tAim">AIM</div>
   <div class="tb" id="tReload">R</div>
   <div class="tb" id="tBino">BINO</div>
+  <div class="tb" id="tFlare">FLARE</div>
   <div class="tb" id="tTorch">LIGHT</div>
   <div class="tb" id="tGun">9MM</div>
   <div class="tb hidden" id="tHose">HOSE</div>
