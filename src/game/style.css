@@ -105,3 +105,35 @@ body.touchui #progress{top:auto;bottom:calc(40% + 10px)}
 body.cine::before, body.cine::after { content: ''; position: fixed; left: 0; right: 0; height: 11vh; background: #000; z-index: 40; pointer-events: none; }
 body.cine::before { top: 0; } body.cine::after { bottom: 0; }
 body.cine #touch, body.cine #cross, body.cine #ammo, body.cine #prompt { visibility: hidden; }
+
+/* v3: rifle scope, compass, stamina, ammo popup, wall map */
+#tRifle{width:50px;height:50px;right:calc(250px + env(safe-area-inset-right));top:calc(12px + env(safe-area-inset-top));font-size:11px}
+#touch.intro #tRifle{display:none}
+#scope{position:fixed;inset:0;pointer-events:none;display:none;z-index:3;background:radial-gradient(circle at 50% 50%,transparent 0,transparent 39vmin,rgba(0,0,0,.55) 40vmin,#000 41.5vmin)}
+#scope.on{display:block}
+#scope .ret{position:absolute;background:#050505;left:50%;top:50%}
+#scope .ret.h{width:80vmin;height:1px;margin-left:-40vmin}
+#scope .ret.v{width:1px;height:80vmin;margin-top:-40vmin}
+#scope .ret.ht{height:4px;width:28vmin;margin-top:-2px}
+#scope .ret.ht.l{margin-left:-40vmin}#scope .ret.ht.r{margin-left:12vmin}
+#scope .ret.vt{width:4px;height:28vmin;margin-left:-2px;margin-top:12vmin}
+#scope .dot{position:absolute;left:50%;top:50%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:#ff2a1a;box-shadow:0 0 6px #ff2a1a}
+#scopeInfo{position:absolute;left:50%;bottom:calc(50% - 38vmin);transform:translateX(-50%);font:600 12px monospace;color:rgba(255,220,170,.7);letter-spacing:2px}
+#compass{position:absolute;left:50%;top:max(10px,env(safe-area-inset-top));transform:translateX(-50%);width:min(420px,52vw);height:26px;overflow:hidden;pointer-events:none;
+  -webkit-mask:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);mask:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);opacity:.85;display:none}
+#compassStrip{position:absolute;top:0;left:0;height:100%;white-space:nowrap;font:600 11px monospace;color:#e8e0cc;text-shadow:0 1px 2px #000}
+#compassStrip span{position:absolute;top:3px;transform:translateX(-50%)}
+#compassStrip span.mk{color:#ffd27a;top:13px;font-size:10px}
+#compassStrip span.mk.cab{color:#ff8a6a}
+#compassTick{position:absolute;left:50%;top:0;width:2px;height:8px;margin-left:-1px;background:#ffd27a}
+body.touchui #compass{top:calc(52px + env(safe-area-inset-top));width:min(300px,46vw)}
+#stamina{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(160px,30vw);height:4px;border-radius:2px;background:rgba(0,0,0,.45);opacity:0;transition:opacity .4s;pointer-events:none}
+#staminaBar{height:100%;width:100%;border-radius:2px;background:#d8d0b8}
+#stamina.tired #staminaBar{background:#d86a4a}
+body.touchui #stamina{bottom:calc(150px + env(safe-area-inset-bottom))}
+#ammoPop{position:absolute;right:max(22px,env(safe-area-inset-right));bottom:calc(max(20px,env(safe-area-inset-bottom)) + 30px);font:700 15px monospace;color:#ffd27a;text-shadow:0 1px 3px #000;opacity:0;transition:opacity .25s,transform .6s;pointer-events:none;letter-spacing:1px}
+#ammoPop.on{opacity:1;transform:translateY(-10px)}
+body.touchui #ammoPop{right:calc(160px + env(safe-area-inset-right));bottom:calc(112px + env(safe-area-inset-bottom))}
+#mapView{position:fixed;inset:0;z-index:6;background:rgba(0,0,0,.82);display:flex;flex-direction:column;align-items:center;justify-content:center}
+#mapView.hidden{display:none}
+#mapCanvas{width:min(86vmin,760px);height:min(86vmin,760px);box-shadow:0 8px 40px #000}

@@ -28,6 +28,7 @@
 <div id="fade"></div>
 <div id="vignette"></div>
 <div id="bino"><div class="lens l"></div><div class="lens r"></div><div id="binoInfo"></div></div>
+<div id="scope"><div class="ret h"></div><div class="ret v"></div><div class="ret ht l"></div><div class="ret ht r"></div><div class="ret vt"></div><div class="dot"></div><div id="scopeInfo"></div></div>
 <div id="hud">
   <div id="clock"></div>
   <div id="ammo"></div>
@@ -37,6 +38,10 @@
   <div id="toast"></div>
   <div id="subs"></div>
   <div id="tgtMark" style="display:none"></div>
+  <div id="compass"><div id="compassStrip"></div><div id="compassTick"></div></div>
+  <div id="stamina"><div id="staminaBar"></div></div>
+  <div id="ammoPop"></div>
+  <div id="mapView" class="hidden"><canvas id="mapCanvas" width="900" height="900"></canvas><p class="small" id="mapHint">Tap / click to close</p></div>
   <div id="progress"><div id="progressBar"></div><span id="progressText"></span></div>
   <div id="power"></div>
 </div>
@@ -50,6 +55,7 @@
   <div class="tb" id="tTorch">LIGHT</div>
   <div class="tb" id="tGun">9MM</div>
   <div class="tb hidden" id="tHose">HOSE</div>
+  <div class="tb hidden" id="tRifle">RIFLE</div>
   <div class="tb" id="tFlood">FLOOD</div>
   <div class="tb" id="tUse">USE</div>
   <div class="tb small" id="tPause">II</div>

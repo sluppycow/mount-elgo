@@ -409,6 +409,12 @@ export class Skinwalker {
   // a 9mm hit: shriek, flinch, then scramble for the trees and stay away 25-40 s
   scare() { if (this.state === 'off' || this.state === 'flinch' || this.state === 'flee') return false; this.scareCount++; this.setState('flinch'); this.speed = 0;
     this.sfx('far-scream-' + (1 + (this.scareCount % 3)), 1.1, { ref: 14 }); this.syn('swShriek', 200, 1.2); this.hooks.scared && this.hooks.scared(); return true; }
+  // a bullet hit: power 1 = 9mm, 2 = .308. Two pistol hits (or one rifle hit) and it shrieks and runs; one pistol hit staggers it.
+  // returns null (no effect), 'stagger' or 'flee'
+  hit(power = 1, from = null) { if (this.state === 'off' || this.state === 'flinch' || this.state === 'flee' || this.state === 'caught' || this.state === 'bolt') return null;
+    this.hp = (this.hp ?? 2) - power; if (this.hp <= 0) { this.scare(); this.flinchK = power > 1 ? 1.6 : 1; return 'flee'; }
+    this.resume = this.state === 'peek' || this.state === 'prowl' ? 'prowl' : this.state === 'charge' ? 'charge' : 'stalk'; this.setState('stagger'); this.speed = 0; this.flinchK = 0.8;
+    this.syn('swShriek', 200, 0.7); this.sfx('stinger-' + (1 + Math.floor(Math.random() * 3)), 0.5); if (from) { const d = V(this.pos.x - from.x, 0, this.pos.z - from.z).normalize(); this.knock = d.multiplyScalar(power > 1 ? 2.4 : 1.4); } return 'stagger'; }
   startCharge() { this.setState('charge'); this.sfx('stinger-' + (1 + Math.floor(Math.random() * 3)), 0.9); this.syn('swBugle', 300, 1.1); this.hooks.growl && this.hooks.growl(this.model.position); this.hooks.charge && this.hooks.charge(); }
   // AI: ctx = { player: Vector3 (feet), active: bool (player is on the ground), aggr: 0..1, lit: 0..1 light on it, viewDir }
   update(dt, ctx = {}) {
@@ -419,17 +425,17 @@ export class Skinwalker {
       this.seenT = seen ? this.seenT + dt : Math.max(0, this.seenT - dt * 2); } else this.seenT = 0;
     const lit = (ctx.lit || 0) > 0.9;
     switch (this.state) {
-      case 'off': this.cool -= dt; if (ctx.active && this.cool <= 0 && P) this.spawnStalk(P, ctx); break;
+      case 'off': this.cool -= dt; if (ctx.active && this.cool <= 0 && P) { if (ctx.indoor && ctx.cabin) this.spawnProwl(ctx); else this.spawnStalk(P, ctx); } break;
       case 'bolt': { const d = V(this.path.b.x - this.pos.x, 0, this.path.b.z - this.pos.z); const L = d.length(); if (L < 1) { this.hide(); break; } d.normalize(); this.heading = Math.atan2(d.x, d.z); this.pos.addScaledVector(d, Math.min(L, this.speed * dt)); target = 'gallop'; break; }
       case 'creep': { // low crawl out of the brush / through low cover, drifting sideways, nearly silent
-        if (!ctx.active) { this.retreat(); break; }
+        if (!ctx.active) { this.retreat(); break; } if (ctx.indoor && ctx.cabin) { this.setState('prowl'); this.ang = null; this.nextPeek = 3; break; }
         const dir = toP.clone().normalize(); const mv = dir.clone().addScaledVector(V(-dir.z, 0, dir.x), this.side * 0.45).normalize(); const sp = this.closing ? 2.1 : 1.2;
         this.pos.addScaledVector(mv, sp * dt); this.heading = Math.atan2(toP.x, toP.z); this.speed = sp; target = 'crawl';
         if (this.seenT > 1.1 && lit && this.stateT > 1) { this.startCharge(); break; }
         if (this.closing ? (dist < 10 || this.stateT > this.creepFor) : (dist < 17 || this.stateT > this.creepFor)) { if (this.closing && (ctx.aggr ?? 1) > 0) this.startCharge(); else { this.setState('stalk'); this.stalkFor = 6 + Math.random() * 5 - (ctx.aggr || 0) * 3; } }
         break; }
       case 'stalk': { // pace the tree line at the edge of the light, pausing to stare; then drop low and close in, or charge
-        if (!ctx.active) { this.retreat(); break; }
+        if (!ctx.active) { this.retreat(); break; } if (ctx.indoor && ctx.cabin) { this.setState('prowl'); this.ang = null; this.nextPeek = 3 + Math.random() * 3; break; }
         if (this.pauseT > 0) this.pauseT -= dt; else if (Math.random() < dt * 0.12 || (this.seenT > 0.3 && !lit && Math.random() < dt * 2)) this.pauseT = 1.2 + Math.random() * 1.6;
         const want = 20 - Math.min(10, this.stateT * 0.6); const tang = V(-toP.z, 0, toP.x).normalize().multiplyScalar(this.side || 1); const radial = toP.clone().normalize().multiplyScalar(dist - want);
         const mv = tang.multiplyScalar(1.6).add(radial.multiplyScalar(0.25)); let sp = Math.min(2.4, mv.length()); if (this.pauseT > 0) sp = 0; if (sp > 0.05) { mv.normalize(); this.pos.addScaledVector(mv, sp * dt); }
@@ -439,18 +445,35 @@ export class Skinwalker {
         if (this.stateT > (this.stalkFor || 9) && (ctx.aggr ?? 1) > 0) { if (dist > 13) { this.setState('creep'); this.closing = true; this.creepFor = 5 + Math.random() * 2; } else this.startCharge(); }
         else if (this.stateT > (this.stalkFor || 9) + 6) this.retreat();
         break; }
-      case 'charge': { if (!ctx.active) { this.retreat(); break; } const gal = this.stateT > 1.3 && dist > 3; const sp = 6.2 + 2.2 * (ctx.aggr ?? 0.5) + (gal ? 1.2 : 0); const d = toP.clone().normalize(); this.heading = Math.atan2(d.x, d.z);
+      case 'charge': { if (!ctx.active) { this.retreat(); break; } const gal = this.stateT > 1.3 && dist > 3; const sp = 6.2 + 2.2 * (ctx.aggr ?? 0.5) + (gal ? 1.2 : 0); const rt = ctx.route && ctx.route(this.pos); const d = rt ? V(rt.x - this.pos.x, 0, rt.z - this.pos.z).normalize() : toP.clone().normalize(); this.heading = Math.atan2(d.x, d.z);
         this.pos.addScaledVector(d, Math.min(dist, sp * dt)); this.speed = sp; target = gal ? 'gallop' : 'run'; if (dist < 1.25) { this.setState('caught'); this.speed = 0; this.hooks.caught && this.hooks.caught(); } break; }
       case 'flinch': target = 'flinch'; if (this.stateT > 0.6) { this.setState('flee'); this.fleeDir = toP.clone().normalize().negate(); this.syn('swCrash', 200, 1.0, 1.8); this.crashT = 0.7; } break;
       case 'flee': { const d = this.fleeDir || V(1, 0, 0); this.heading = Math.atan2(d.x, d.z); this.speed = 13; this.pos.addScaledVector(d, this.speed * dt); target = 'gallop';
         this.crashT -= dt; if (this.crashT < 0 && this.stateT < 3) { this.crashT = 0.6 + Math.random() * 0.5; this.syn('swCrash', 120, 0.7, 0.9); }
         if (this.stateT > 4 || dist > 70) { this.hide(); this.cool = 25 + Math.random() * 15; } break; }
       case 'retreat': { const d = toP.clone().normalize().negate(); this.heading = Math.atan2(d.x, d.z); this.speed = 9; this.pos.addScaledVector(d, this.speed * dt); target = 'gallop'; if (this.stateT > 3 || dist > 60) { this.hide(); this.cool = 12 + Math.random() * 10; } break; }
+      case 'stagger': { target = 'flinch'; this.speed = 0; if (this.knock) { this.pos.addScaledVector(this.knock, dt * 3); this.knock.multiplyScalar(Math.max(0, 1 - dt * 6)); }
+        if (this.stateT > 0.45) { const r = this.resume || 'stalk'; if (r === 'charge') this.setState('charge'); else if (r === 'prowl') this.setState('prowl'); else { this.setState('stalk'); this.stalkFor = 3; } } break; }
+      // the player is inside the ranger cabin: circle it, scratch the walls, knock, and stop at the windows to look in
+      case 'prowl': case 'peek': { const C = ctx.cabin; if (!C || !ctx.active) { this.retreat(); break; }
+        if (!ctx.indoor) { if (dist < 14 && (ctx.aggr ?? 1) > 0) this.startCharge(); else { this.setState('stalk'); this.stalkFor = 4; } break; }
+        if (ctx.doorOpen && this.stateT > 1.2 && (ctx.aggr ?? 1) > 0) { this.startCharge(); break; }
+        if (this.state === 'peek') { const w = this.win; target = 'idle'; this.speed = 0; this.pos.lerp(V(w.outW.x, this.pos.y, w.outW.z), Math.min(1, dt * 2)); this.heading = w.yaw + Math.PI;
+          this.eyeGlow = 1; if (this.stateT > this.peekFor || (this.seenT > 1.0 && lit)) { this.eyeGlow = 0; this.setState('prowl'); this.nextPeek = 5 + Math.random() * 6; this.hooks.prowl && this.hooks.prowl('leave', this.pos); } break; }
+        const cx = C.center.x, cz = C.center.z; this.ang = (this.ang ?? Math.atan2(this.pos.x - cx, this.pos.z - cz)) + dt * 0.32 * (this.side || 1);
+        const R = 5.6 + Math.sin(this.t * 0.4) * 0.6; const goal = V(cx + Math.sin(this.ang) * R, 0, cz + Math.cos(this.ang) * R); const d = goal.sub(this.pos).setY(0); const L = d.length();
+        const sp = Math.min(2.2, L * 2); if (L > 0.05) { d.normalize(); this.pos.addScaledVector(d, sp * dt); this.heading = Math.atan2(d.x, d.z); } this.speed = sp; target = sp > 1.6 ? 'crawl' : 'stalk';
+        this.nextPeek = (this.nextPeek ?? 4) - dt; this.evT = (this.evT ?? 2) - dt;
+        if (this.evT < 0) { this.evT = 2.5 + Math.random() * 4; const k = Math.random(); this.hooks.prowl && this.hooks.prowl(k < 0.45 ? 'scratch' : k < 0.7 ? 'knock' : k < 0.85 ? 'breath' : 'step', this.pos); }
+        if (this.nextPeek < 0 && C.windows.length) { // nearest window to where it is now
+          let best = null, bd = 1e9; for (const w of C.windows) { const q = (w.outW.x - this.pos.x) ** 2 + (w.outW.z - this.pos.z) ** 2; if (q < bd) { bd = q; best = w; } }
+          if (bd < 16) { this.win = best; this.setState('peek'); this.peekFor = 2.2 + Math.random() * 2.2; this.hooks.prowl && this.hooks.prowl('peek', best.cW); } else this.nextPeek = 0.5; }
+        break; }
       case 'caught': target = 'idle'; break;
       case 'watch': target = 'idle'; this.heading = Math.atan2(toP.x, toP.z); break;
     }
     if (this.state === 'off') return;
-    this.pos.y = height(this.pos.x, this.pos.z); this.model.position.copy(this.pos);
+    if (ctx.avoid && this.state !== 'charge') ctx.avoid(this.pos); const fy = ctx.floorAt ? ctx.floorAt(this.pos.x, this.pos.z) : null; this.pos.y = fy ?? height(this.pos.x, this.pos.z); this.model.position.copy(this.pos);
     let dh = this.heading - this.model.rotation.y; dh = Math.atan2(Math.sin(dh), Math.cos(dh)); this.model.rotation.y += dh * Math.min(1, dt * (target === 'crawl' ? 5 : 10));
     // head tracks the player (relative to the body), within the neck's reach
     if (P) { let ly = Math.atan2(toP.x, toP.z) - this.model.rotation.y; ly = Math.atan2(Math.sin(ly), Math.cos(ly)); this.lookGoal = Math.max(-1, Math.min(1, ly)); } else this.lookGoal = 0;
@@ -461,9 +484,11 @@ export class Skinwalker {
     const back = ctx.viewDir ? Math.atan2(-ctx.viewDir.x, -ctx.viewDir.z) : Math.random() * 6.28; const a = back + (Math.random() - 0.5) * 1.8; const r = 26 + Math.random() * 6;
     this.place(V(P.x + Math.sin(a) * r, 0, P.z + Math.cos(a) * r), a + Math.PI); this.show(true); this.side = Math.random() < 0.5 ? -1 : 1; this.stalkFor = 6 + Math.random() * 6 - (ctx.aggr || 0) * 3; this.closing = false; this.pauseT = 0;
     if (Math.random() < 0.6) { this.setState('creep'); this.creepFor = 4 + Math.random() * 3; this.anim = this.prevAnim = 'crawl'; } else { this.setState('stalk'); this.anim = this.prevAnim = 'stalk'; }
-    this.blend = 1; this.cur = null; this.sfx('far-branch-snap-' + (1 + Math.floor(Math.random() * 4)), 1.0, { ref: 12 }); this.hooks.spotted && this.hooks.spotted();
+    this.hp = 2; this.blend = 1; this.cur = null; this.sfx('far-branch-snap-' + (1 + Math.floor(Math.random() * 4)), 1.0, { ref: 12 }); this.hooks.spotted && this.hooks.spotted();
   }
   retreat() { if (this.state === 'off') return; this.setState('retreat'); }
+  spawnProwl(ctx) { const C = ctx.cabin; const a = Math.random() * 6.28; this.ang = a; this.place(V(C.center.x + Math.sin(a) * 6, 0, C.center.z + Math.cos(a) * 6), a + Math.PI); this.show(true); this.hp = 2;
+    this.side = Math.random() < 0.5 ? -1 : 1; this.setState('prowl'); this.nextPeek = 4 + Math.random() * 4; this.anim = this.prevAnim = 'stalk'; this.blend = 1; this.cur = null; this.hooks.prowl && this.hooks.prowl('arrive', this.pos); }
   animate(dt, target, ctx = {}) {
     if (target !== this.anim) { this.prevAnim = this.anim; this.anim = target; this.blend = 0; }
     this.blend = Math.min(1, this.blend + dt * (target === 'flinch' ? 9 : 2.6));
@@ -483,7 +508,7 @@ export class Skinwalker {
     poseRig(this.J, this.cur, gnd);
     this.audioTick(dt, target);
     // eyeshine: a dim glint, flaring when a light is on it
-    const e = 0.35 + 1.4 * (ctx.lit || 0); this.eye += (e - this.eye) * Math.min(1, dt * 6); this.J.eyeMat.opacity = Math.min(1, this.eye); for (const sp of this.J.eyes) sp.scale.setScalar(0.008 + 0.016 * Math.min(1, this.eye));
+    const e = 0.35 + 1.4 * (ctx.lit || 0) + (this.state === 'peek' ? 1.3 : 0) + (ctx.flash || 0) * 1.5; this.eye += (e - this.eye) * Math.min(1, dt * 6); this.J.eyeMat.opacity = Math.min(1, this.eye); for (const sp of this.J.eyes) sp.scale.setScalar(0.008 + 0.016 * Math.min(1, this.eye));
   }
   // footfalls/limb scrapes on each touchdown of the stride, breathing/panting and jaw rattles on timers
   audioTick(dt, target) {
@@ -503,4 +528,11 @@ export class Skinwalker {
       else this.breathT = 0.5; }
     this.jawT -= dt; if (this.jawT <= 0) { this.jawT = 3 + Math.random() * 4; if (target === 'idle' || target === 'stalk' || target === 'crawl') { this.clickT = 0.16; this.syn('swJaw', 22, 0.7); } }
   }
+}
+// a bleached deer skull with antlers for the bone totems on the cabin trail (same sculpt as the creature's, no flesh; cached)
+let _skull = null;
+export function buildDeerSkull() {
+  if (!_skull) { const M = swMats(); const H = buildHead(M); _skull = { bone: H.bone, jaw: H.jaw, mat: M.bone, jp: H.jawPivot }; }
+  const g = new THREE.Group(); const s = new THREE.Mesh(_skull.bone, _skull.mat); s.castShadow = true; g.add(s);
+  const j = new THREE.Mesh(_skull.jaw, _skull.mat); j.position.copy(_skull.jp); j.rotation.x = 0.22; g.add(j); return g;
 }

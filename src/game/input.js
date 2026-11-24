@@ -24,7 +24,7 @@ export class Input {
   lock() { if (this.phone || this.touchOn) return; const c = this.canvas; try { const r = c.requestPointerLock && c.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) {} }
   press(n) { this.pressed.add(n); }
   bindKeys() {
-    const map = { KeyR: 'reload', Digit1: 'gun', Digit2: 'torch', Digit3: 'hose', KeyB: 'bino', KeyF: 'torchToggle' };
+    const map = { KeyR: 'reload', Digit1: 'gun', Digit2: 'weapon2', Digit3: 'hose', Digit4: 'torch', KeyB: 'bino', KeyF: 'torchToggle' };
     addEventListener('keydown', (e) => {
       if (e.repeat) return; if (!this.enabled) return;
       this.keys.add(e.code);
@@ -77,6 +77,7 @@ export class Input {
     btn('tTorch', () => this.press('torchBtn'));
     btn('tGun', () => this.press('gun'));
     btn('tHose', () => this.press('hose'));
+    btn('tRifle', () => this.press('rifle'));
     btn('tFlood', () => this.held.add('flood'), () => this.held.delete('flood'));
     btn('tUse', () => { this.held.add('use'); this.press('useDown'); }, () => { this.held.delete('use'); this.press('useUp'); });
     btn('tPause', () => this.onPause && this.onPause());

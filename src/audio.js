@@ -86,6 +86,39 @@ export const SYNTH = {
   gateRattle(ctx, d, t) { for (let i = 0; i < 4; i++) { ping(ctx, d, t + i * 0.06, { f: 1900 + i * 230, dur: 0.07, peak: 0.06, type: 'triangle' }); click(ctx, d, t + i * 0.06, 0.25, 2400); } },
   pickup(ctx, d, t) { nburst(ctx, d, t, { dur: 0.12, type: 'bandpass', f: 1400, q: 0.6, peak: 0.12, a: 0.03 }); click(ctx, d, t + 0.1, 0.3, 2600); },
   paper(ctx, d, t) { nburst(ctx, d, t, { dur: 0.25, type: 'highpass', f: 2500, q: 0.4, peak: 0.08, a: 0.05 }); },
+  // .308 bolt rifle: harder supersonic crack, deeper blast, ridge slap-backs a beat later, very long valley roll
+  rifleShot(ctx, dest, t0) {
+    const eq = ctx.createBiquadFilter(); eq.type = 'peaking'; eq.frequency.value = 80; eq.Q.value = 0.8; eq.gain.value = 6; eq.connect(dest);
+    const dry = ctx.createGain(); dry.gain.value = 1.0; dry.connect(eq);
+    const conv = ctx.createConvolver(); conv.buffer = valleyImpulse(ctx); const wet = ctx.createGain(); wet.gain.value = 1.8; conv.connect(wet).connect(dest);
+    const bus = ctx.createGain(); bus.connect(dry); bus.connect(conv); const v = 0.95 + Math.random() * 0.1;
+    nburst(ctx, bus, t0, { dur: 0.008, type: 'highpass', f: 3800, q: 0.6, peak: 1.0 });
+    nburst(ctx, bus, t0, { dur: 0.32, type: 'lowpass', f: 1100 * v, q: 0.7, peak: 1.0, a: 0.001 });
+    nburst(ctx, bus, t0 + 0.003, { dur: 0.7, type: 'lowpass', f: 240, q: 0.6, peak: 0.8, a: 0.003 });
+    const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(90 * v, t0); o.frequency.exponentialRampToValueAtTime(28, t0 + 0.3);
+    const g = ctx.createGain(); env(g, t0, 0.002, 1.0, 0.35); o.connect(g).connect(bus); o.start(t0); o.stop(t0 + 0.45);
+    for (const [dt, pk, f] of [[0.85, 0.22, 700], [1.6, 0.14, 520], [2.5, 0.08, 400]]) nburst(ctx, dest, t0 + dt, { dur: 0.5, type: 'lowpass', f, q: 0.5, peak: pk, a: 0.03 });
+    const n = ctx.createBufferSource(); n.buffer = noise(ctx); const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(700, t0); lp.frequency.exponentialRampToValueAtTime(90, t0 + 4);
+    const tg = ctx.createGain(); tg.gain.setValueAtTime(0.0001, t0); tg.gain.linearRampToValueAtTime(0.22, t0 + 0.08); tg.gain.setTargetAtTime(0.0001, t0 + 0.2, 0.9); n.connect(lp).connect(tg).connect(dest); n.start(t0, Math.random() * 0.4, 4.5);
+  },
+  // bolt cycle: lift, draw back (case flick), push forward, lock down
+  rifleBolt(ctx, d, t) { click(ctx, d, t, 0.55, 1900); nburst(ctx, d, t + 0.06, { dur: 0.16, f: 3200, q: 1.4, peak: 0.16, a: 0.02 }); click(ctx, d, t + 0.22, 0.7, 2500);
+    nburst(ctx, d, t + 0.34, { dur: 0.14, f: 2800, q: 1.2, peak: 0.15, a: 0.02 }); click(ctx, d, t + 0.48, 1.0, 2100); click(ctx, d, t + 0.58, 0.8, 1600); ping(ctx, d, t + 0.58, { f: 700, dur: 0.06, peak: 0.08, type: 'triangle' }); },
+  rifleMagOut(ctx, d, t) { click(ctx, d, t, 0.6, 2300); nburst(ctx, d, t + 0.03, { dur: 0.1, f: 1500, q: 1.1, peak: 0.12, a: 0.02 }); },
+  rifleMagIn(ctx, d, t) { nburst(ctx, d, t - 0.05, { dur: 0.05, f: 2000, q: 1, peak: 0.15, a: 0.02 }); click(ctx, d, t, 1.1, 2000); ping(ctx, d, t, { f: 1050, dur: 0.07, peak: 0.08, type: 'triangle' }); },
+  // brass dropping into a hand / pouch (ammo pickup)
+  brassClink(ctx, d, t) { for (let i = 0; i < 4; i++) { const o = i * 0.055 + Math.random() * 0.02; ping(ctx, d, t + o, { f: 5200 + Math.random() * 1600, dur: 0.09, peak: 0.07, type: 'sine' }); ping(ctx, d, t + o, { f: 8300, dur: 0.03, peak: 0.025 }); } },
+  // distant thunder: a crackle then a long rolling rumble
+  thunder(ctx, dest, t0) { const k = 0.7 + Math.random() * 0.3; nburst(ctx, dest, t0, { dur: 0.35, type: 'lowpass', f: 900, q: 0.4, peak: 0.25 * k, a: 0.02 });
+    for (let i = 0; i < 5; i++) nburst(ctx, dest, t0 + 0.2 + i * (0.35 + Math.random() * 0.4), { dur: 1.2 + Math.random(), type: 'lowpass', f: 120 + Math.random() * 90, q: 0.5, peak: (0.6 - i * 0.09) * k, a: 0.2 });
+    const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(42, t0); o.frequency.linearRampToValueAtTime(30, t0 + 4); const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(0.25 * k, t0 + 0.6); g.gain.setTargetAtTime(0.0001, t0 + 1.4, 1.1); o.connect(g).connect(dest); o.start(t0); o.stop(t0 + 6); },
+  // old door hinge groan (pitch-drifting friction squeal through a wood body)
+  doorCreak(ctx, d, t) { const o = ctx.createOscillator(); o.type = 'sawtooth'; const f0 = 210 + Math.random() * 60; o.frequency.setValueAtTime(f0, t); o.frequency.linearRampToValueAtTime(f0 * 1.6, t + 0.35); o.frequency.linearRampToValueAtTime(f0 * 0.9, t + 0.9);
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 900; bp.Q.value = 3; const am = ctx.createGain(); const lfo = ctx.createOscillator(); lfo.frequency.value = 23; const lg = ctx.createGain(); lg.gain.value = 0.5; lfo.connect(lg).connect(am.gain);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.09, t + 0.12); g.gain.setValueAtTime(0.09, t + 0.7); g.gain.linearRampToValueAtTime(0.0001, t + 1.0); o.connect(bp).connect(am).connect(g).connect(d); o.start(t); o.stop(t + 1.05); lfo.start(t); lfo.stop(t + 1.05); },
+  // claws dragged down wood
+  scratch(ctx, d, t) { for (let i = 0; i < 3; i++) nburst(ctx, d, t + i * 0.09, { dur: 0.5, type: 'bandpass', f: 2400 + i * 500, q: 2.5, peak: 0.12, a: 0.05 }); nburst(ctx, d, t, { dur: 0.6, type: 'lowpass', f: 400, q: 0.6, peak: 0.12, a: 0.08 }); },
+  knock(ctx, d, t) { for (let i = 0; i < 3; i++) { nburst(ctx, d, t + i * 0.32, { dur: 0.08, type: 'lowpass', f: 450, q: 0.8, peak: 0.7 }); ping(ctx, d, t + i * 0.32, { f: 110, f2: 70, dur: 0.12, peak: 0.4 }); } },
   drawer(ctx, d, t) { nburst(ctx, d, t, { dur: 0.45, type: 'bandpass', f: 500, q: 0.6, peak: 0.2, a: 0.08 }); click(ctx, d, t + 0.5, 0.4, 900); },
 };
 

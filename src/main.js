@@ -16,13 +16,17 @@ import { NearFire, HoseStream } from './game/nearfire.js';
 import { HoseVM } from './game/hose.js';
 import { SHIFTS, SHIFT_START, SHIFT_END, CLOCK_RATE, MOODS, NIGHT_MOODS, SECRETS } from './game/shifts.js';
 import { buildGround } from './game/ground.js';
+import { buildCabinSite, addMoths } from './game/cabin.js';
+import { RifleVM } from './game/riflevm.js';
+import { Horror } from './game/horror.js';
+import { drawSiteMap, mountSiteMap } from './game/sitemap.js';
 
 const $ = (id) => document.getElementById(id);
 const safe = (f) => { try { const r = f(); if (r && r.catch) r.catch(e => console.log('[safe]', e)); } catch (e) { console.log('[safe]', e && e.message); } };
 const show = (id, on = true) => $(id).classList.toggle('hidden', !on);
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const PHONE = isPhone(); const G_baseExp = { v: 1.15 };
-window.__errors = []; addEventListener('error', e => window.__errors.push(String(e.message)));
+window.__errors = []; window.__dbgNaN = new URLSearchParams(location.search).has('shots'); addEventListener('error', e => window.__errors.push(String(e.message)));
 
 // ---------------- settings ----------------
 const DEF = { quality: 'low', sens: 1, vol: 0.8, fov: 70, touch: 'auto', invert: false, subs: true };
@@ -78,6 +82,7 @@ G.inView = (p, tolDeg) => { const d = p.clone().sub(camera.position); const L = 
 let nearFire = null, hoseOn = false, sprayLoop = null, genHum = null, pourL = null, holdTgt = null, panicT = 0, cut = null, hissT = 0, hbT = 0, pullT = 0, swSeen = false;
 G.power = true; G.radioDead = false; G.pending = new Set(); G.gen = { running: true, fuel: 1, hasCan: false, pulls: 0 };
 const GR = buildGround(scene, T, { onSecret: (d) => openSecret(d) });
+const CB = buildCabinSite(scene, { T, W, GR, at: { bearing: 315, dist: 68 } });
 const SW = new Skinwalker(scene, {
   sound: (id, p, v, o) => G.sound(id, p, v, o), synth: (n, p, ...a) => { if (SFX[n]) SFX[n](audio, p, ...a); }, step: (p, k) => SFX.thud(audio, p, 0.25 + 0.5 * k), growl: (p) => SFX.growl(audio, p, 1, 1.6), caught: () => onCaught(),
   scared: () => { shiftStats.scares++; G.toast('It ran. MOVE!', 2.5); panicT = Math.max(panicT, 8); },
@@ -85,6 +90,52 @@ const SW = new Skinwalker(scene, {
   spotted: () => { panicT = Math.max(panicT, 6); if (!swSeen) { swSeen = true; setTimeout(() => thought('Something is out there. Pacing me. That is not a deer.'), 900); } },
 });
 const hoseVM = new HoseVM(vm); const stream = new HoseStream(scene);
+// ---------------- v3: Marsh's rifle, the ranger cabin, the dread layer ----------------
+const rifleVM = new RifleVM(vm, audio); let rifleOn = false;
+const HZ = new Horror(scene, { audio, SFX, W });
+const siteMap = (() => { const cv = drawSiteMap(Object.assign(document.createElement('canvas'), { width: 1024, height: 1024 }), { CB, GR, T }); const m = mountSiteMap(T, cv, { F: TOWER.floor, H: CAB.H });
+  T.interact.push({ id: 'siteMap', pos: m.pos, r: 1.9, use: () => 'MAP', label: () => 'Look at the site map', press: () => openMap() }); return { cv, ...m }; })();
+function openMap() { const c = $('mapCanvas'); c.getContext('2d').drawImage(siteMap.cv, 0, 0, c.width, c.height); show('mapView'); G.noteOpen = true; G.mapOpen = true; input.setEnabled(false); audio.play('paper', { vol: 0.6 }); }
+$('mapView').onclick = () => { show('mapView', false); G.noteOpen = false; G.mapOpen = false; input.setEnabled(true); input.lock(); };
+const floodPos = (() => { T.group.updateMatrixWorld(true); return T.flood.spot.getWorldPosition(new THREE.Vector3()); })(); const floodMoths = addMoths(scene, floodPos.clone().add(new THREE.Vector3(0, 0.1, 0)), 10);
+CB.onDoor = (open, pos) => { audio.play('doorCreak', { pos, vol: 0.9, ref: 3 }); G.sound(open ? 'door-open' : 'door-close', pos, 0.9, { ref: 4 }); };
+CB.onTakeRifle = () => giveRifle(true);
+const CAB_NOTES = {
+  ranger: { title: 'Note on the table', author: 'D. Marsh, Fire Lookout, Oct. 1986', text: 'If you are reading this, you came down the lantern trail at night like a fool, same as me. The .308 on the rack is mine. Five in the magazine, ninety-five more in the boxes. Take all of it. It does not die from it, but it hates it. Every time I hit it, it ran, and I found brass it had carried back to the porch. Do not leave the door open. It knows the windows. It knows my name. It will learn yours.' },
+  camp: { title: 'Note on the stump', author: 'unsigned, in pencil', text: 'Day 3. Lanterns keep going out on their own. Something walked around the tent all night on two legs, then four. It whistled like my brother. My brother is in Spokane. Going up to the ranger cabin at first light. If the lanterns are out, do NOT follow the trail.' },
+};
+CB.onNote = (k) => { const n = CAB_NOTES[k]; $('noteText').innerHTML = `<h3>${esc(n.title)}</h3><p class="small">${esc(n.author)}</p><p>${esc(n.text)}</p>`; show('note'); G.noteOpen = true; input.setEnabled(false); audio.play('paper', { vol: 0.6 }); };
+function giveRifle(fromRack) { G.has.rifle = true; CB.rifleTaken = true; CB.rifle.visible = false; for (const rd of CB.rackRounds || []) rd.visible = false; rifleVM.ammo = { mag: 4, chamber: 1, reserve: 95, cap: 5 }; $('tRifle').classList.remove('hidden'); audio.play('magPouch', { vol: 0.9 }); audio.play('rifleBolt', { vol: 0.6, delay: 0.5 });
+  rifleEquip(); G.toast((PHONE || input.touchOn) ? '.308 rifle, 100 rounds. RIFLE to equip, AIM for the scope. Shoot it to take its ammo.' : '.308 rifle, 100 rounds. Press 2, right click for the scope. Hit it and take its brass.', 5);
+  if (fromRack) setTimeout(() => thought('Marsh\u2019s rifle. Still oiled. Somebody kept it ready.'), 1400); }
+function rifleEquip() { if (!G.has.rifle) { G.toast('Marsh\u2019s rifle is at the old ranger cabin. Check the site map by the door.'); return; } if (rifleOn) return; setBino(false); vm.setADS(false); aimHeld = false; hoseOff(); vm.equip('none'); rifleOn = true; rifleVM.show(true); }
+function rifleOff() { if (!rifleOn) return; rifleOn = false; rifleVM.show(false); rifleVM.setADS(false); }
+function ammoPop(n) { const el = $('ammoPop'); el.textContent = `+${n} RIFLE AMMO`; el.classList.add('on'); clearTimeout(G._apT); G._apT = setTimeout(() => el.classList.remove('on'), 1600); audio.play('brassClink', { vol: 0.9 }); }
+// a hit on the creature: rifle rounds come back off it (+8 per hit, +15 when it shrieks and runs)
+function hitSW(power, point) { const r = SW.hit(power, V(P.x, P.y, P.z)); if (!r) return false; HZ.impact(point, V(P.x, P.y + 1.6, P.z).sub(point), 'blood');
+  if (G.has.rifle) { const n = r === 'flee' ? 15 : 8; rifleVM.ammo.reserve += n; ammoPop(n); }
+  G.toast(r === 'flee' ? 'HIT \u2014 it shrieks and runs!' : power > 1 ? 'HIT \u2014 it staggers!' : 'HIT \u2014 it flinches. Again!', 2.2); return true; }
+function shootRifle() {
+  ray.setFromCamera(new THREE.Vector2(0, 0), camera); ray.far = 1500; CB.flashAt(camera.position.clone().addScaledVector(ray.ray.direction, 0.9));
+  const sh = SW.model.visible && SW.state !== 'bolt' ? ray.intersectObjects(SW.meshes, false)[0] : null;
+  const list = [...director.targets(), W.terrain, CB.group, T.target, T.hitProxy]; const hit = ray.intersectObjects(list, true).find(h => h.object.visible !== false && !h.object.isSprite);
+  if (sh && (!hit || sh.distance < hit.distance + 0.5)) { hitSW(2, sh.point); return; }
+  if (!hit) return; if (hit.object === T.target || hit.object === T.hitProxy) { G.toast('TARGET HIT!', 1.5); T.onTargetHit && T.onTargetHit(hit.point); audio.play('gateRattle', { vol: 0.8 }); return; }
+  director.shotAt(hit.object); const n = hit.face ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld) : V(0, 1, 0);
+  HZ.impact(hit.point, n, hit.object === W.terrain ? 'dirt' : /iron|can|wire/.test(hit.object.name) ? 'spark' : 'wood'); audio.play('bulletHit', { pos: hit.point, vol: 0.8, ref: 6 });
+}
+// the creature reaches a player inside the cabin only through the door
+function swRoute(pos) { if (!P.indoor) return null; const inside = CB.indoors(pos.x, pos.z) || CB.zone(pos.x, pos.z) === 'door';
+  if (inside) return null; if (!CB.door.open) { if (Math.hypot(pos.x - CB.doorOut.x, pos.z - CB.doorOut.z) < 1.3 && SW.state === 'charge') { SW.setState('prowl'); SW.nextPeek = 2; audio.play('knock', { pos: CB.doorLatch, vol: 1.2, ref: 5 }); G.scare(1); } return CB.doorOut; }
+  const toDoor = Math.hypot(pos.x - CB.doorOut.x, pos.z - CB.doorOut.z); return toDoor > 0.6 && CB.zone(pos.x, pos.z) !== 'porch' ? CB.doorOut : CB.doorIn; }
+function lightningReveal() { if (SW.state !== 'off') return; const f = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).setY(0).normalize(); const side = (Math.random() - 0.5) * 0.5;
+  const d = P.mode === 'cab' ? 32 + Math.random() * 10 : 18 + Math.random() * 8; const dir = f.clone().applyAxisAngle(V(0, 1, 0), side); const p = V(P.x + dir.x * d, 0, P.z + dir.z * d);
+  if (Math.hypot(p.x, p.z) < 9 || Math.hypot(p.x, p.z) > 170 || (CB.zone(p.x, p.z) && CB.zone(p.x, p.z) !== null)) return;
+  SW.place(p, Math.atan2(P.x - p.x, P.z - p.z)); SW.show(true); SW.setState('watch'); SW.anim = SW.prevAnim = 'idle'; SW.blend = 1; G.revealT = 0.55; setTimeout(() => G.sound('stinger-' + (1 + Math.floor(Math.random() * 4)), null, 0.7), 120); G.scare(1); panicT = Math.max(panicT, 4); }
+SW.hooks.prowl = (k, pos) => { const p = pos.clone ? pos.clone() : pos; if (k === 'scratch') audio.play('scratch', { pos: V(p.x, CB.floorY + 1.2, p.z), vol: 1.1, ref: 4 }); else if (k === 'knock') audio.play('knock', { pos: V(p.x, CB.floorY + 1.0, p.z), vol: 0.9, ref: 5 });
+  else if (k === 'breath') SFX.swBreath(audio, V(p.x, CB.floorY + 1.5, p.z), 0.7, 1.2); else if (k === 'step') { audio.play('footstep-wood-' + (1 + Math.floor(Math.random() * 8)), { pos: V(p.x, CB.floorY, p.z), vol: 0.8, rate: 0.7, ref: 4 }); SFX.swStep(audio, p, 0.6); }
+  else if (k === 'peek') { G.sound('stinger-1', null, 0.45); if (!G._peekSeen) { G._peekSeen = true; setTimeout(() => thought('The window. It\u2019s at the window. Don\u2019t open the door.'), 1500); } } else if (k === 'arrive') { G.sound('far-branch-snap-' + (1 + Math.floor(Math.random() * 4)), p, 1.0, { ref: 10 }); } };
+rifleVM.onEvent = (n) => { if (n === 'fire') { shootRifle(); audio.duckBreath(); } if (n === 'casing') { const side = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion); HZ.dropBrass(camera.position.clone().addScaledVector(side, 0.25).add(V(0, -0.25, 0)), side, true); } };
 // night lighting for the hands: cool moon rim from behind, warm cab-lantern fill
 vm.rim = new THREE.DirectionalLight(0x9db4e6, 0); vm.rim.position.set(0.6, 1.2, -1.6); vm.scene.add(vm.rim);
 vm.warm = new THREE.PointLight(0xffa860, 0, 3.2, 2); vm.warm.position.set(-0.5, 0.15, 0.25); vm.scene.add(vm.warm);
@@ -191,15 +242,17 @@ vm.onEvent = (n) => {
   if (n === 'fire') { shots++; shoot(); audio.duckBreath(); }
   if (n === 'reloadDone' && tut) tut.flags.reload = true;
   if (n === 'torch' && tut) { if (vm.torchOn) tut.flags.torchOn = true; else if (tut.flags.torchOn) tut.flags.torchOff = true; }
-  if (n === 'magDropped' || n === 'casing') {}
+  if (n === 'casing') { const side = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion); HZ.dropBrass(camera.position.clone().addScaledVector(side, 0.2).add(V(0, -0.3, 0)), side, false); }
 };
 const ray = new THREE.Raycaster();
 function shoot() {
   ray.setFromCamera(new THREE.Vector2(0, 0), camera); ray.far = 1500;
   const th = ray.intersectObjects([T.target, T.hitProxy], false)[0]; const list = [...director.targets(), W.terrain]; let hit = ray.intersectObjects(list, false)[0]; if (th && (!hit || hit.object === W.terrain || th.distance < hit.distance)) hit = th;
-  const sh = SW.model.visible && SW.state !== 'bolt' ? ray.intersectObjects(SW.meshes, false)[0] : null; if (sh && (!hit || sh.distance < hit.distance + 0.5)) { if (SW.scare()) G.toast('HIT — it shrieks and runs!', 2.5); return; }
+  const sh = SW.model.visible && SW.state !== 'bolt' ? ray.intersectObjects(SW.meshes, false)[0] : null; if (sh && (!hit || sh.distance < hit.distance + 0.5)) { hitSW(1, sh.point); return; }
+  { const ch = ray.intersectObjects([CB.group], true).find(h => !h.object.isSprite); if (ch && (!hit || ch.distance < hit.distance)) { HZ.impact(ch.point, ch.face ? ch.face.normal.clone().transformDirection(ch.object.matrixWorld) : V(0, 1, 0), 'wood'); audio.play('bulletHit', { pos: ch.point, vol: 0.7 }); return; } }
   if (!hit) return; if (hit.object === T.target || hit.object === T.hitProxy) { if (tut) tut.flags.hit = true; if (tut && tut.step && tut.step.id === 's8' && !tut.cutStarted) { tut.cutStarted = true; setTimeout(() => startCutscene(() => { if (tut) tut.flags.cutDone = true; }), 650); } G.toast('TARGET HIT!', 1.5); T.onTargetHit && T.onTargetHit(hit.point); audio.play('gateRattle', { vol: 0.8 }); audio.play('bulletHit', { vol: 0.9 }); return; }
   else if (director.shotAt(hit.object)) {}
+  if (hit.object === W.terrain) HZ.impact(hit.point, hit.face ? hit.face.normal.clone() : V(0, 1, 0), 'dirt');
   // the shot echoes down the valley
   audio.play('far-branch-snap-2', { pos: hit.point, vol: 0.2, ref: 30, delay: Math.min(1.5, hit.distance / 340) });
 }
@@ -257,11 +310,12 @@ function movePlayer(dt, inp) {
   } else {
     const nx = P.x + dx, nz = P.z + dz; const b = ST.bottom;
     if (Math.hypot(nx - b.x, nz - b.z) < 0.8 && dz > 0) { P.mode = 'stairs'; P.stairDir = -1; P.s = ST.L - 0.02; const a = stairAt(P.s); P.x = a.p.x; P.z = a.p.z; P.y = a.p.y; }
-    else { if (groundOK(nx, nz)) { P.x = nx; P.z = nz; } else if (groundOK(nx, P.z)) P.x = nx; else if (groundOK(P.x, nz)) P.z = nz; P.y = gyH(P.x, P.z); }
+    else { const ok = (x, z) => groundOK(x, z) && !CB.blocked(x, z); if (ok(nx, nz)) { P.x = nx; P.z = nz; } else if (ok(nx, P.z)) P.x = nx; else if (ok(P.x, nz)) P.z = nz;
+      const fy = CB.floorAt(P.x, P.z); P.onWood = fy != null; const ty = fy ?? gyH(P.x, P.z); P.y = P.onWood && Math.abs(ty - P.y) < 0.4 ? P.y + (ty - P.y) * Math.min(1, dt * 14) : ty; P.indoor = CB.indoors(P.x, P.z); }
   }
   const moved = Math.hypot(P.x - ox, P.z - oz, (P.y - oy) * 0.5); P.stepT += moved;
   if (P.stepT > (P.mode === 'ground' ? (run ? 0.85 : 0.7) : 0.55)) { P.stepT = 0;
-    if (P.mode === 'ground') SFX.crunch(audio, { x: P.x, y: P.y + 0.05, z: P.z }, run ? 0.6 : 0.42);
+    if (P.mode === 'ground' && !P.onWood) SFX.crunch(audio, { x: P.x, y: P.y + 0.05, z: P.z }, run ? 0.6 : 0.42);
     else { const id = 'footstep-wood-' + (1 + Math.floor(Math.random() * 8)); audio.play(id, { vol: P.mode === 'stairs' ? 0.65 : 0.5, pos: { x: P.x, y: P.y + 0.05, z: P.z }, ref: 3, rate: P.mode === 'stairs' ? 0.92 : 1 }); } }
   return moved;
 }
@@ -337,14 +391,14 @@ function thought(text, o = {}) { G.radioSay(text, Object.assign({ speaker: 'YOU'
 function setObjective(title, text) { G.objTitle = title; $('objective').innerHTML = title ? `<b>${esc(title)}</b><br><span class="small">${esc(text)}</span>` : ''; }
 function progress(k, text) { const el = $('progress'); if (k == null) { el.style.display = 'none'; return; } el.style.display = 'block'; $('progressBar').style.width = Math.round(Math.max(0, Math.min(1, k)) * 100) + '%'; $('progressText').textContent = text || ''; }
 function hoseOff() { hoseOn = false; hoseVM.show(false); hoseVM.spray = false; stream.on = false; if (sprayLoop) { sprayLoop.stop(); sprayLoop = null; } }
-function hoseEquip() { if (!G.has.hose) { G.toast('The hose pack is in the red fire cache at the trailhead.'); return; } if (hoseOn) return; setBino(false); vm.setADS(false); aimHeld = false; vm.equip('none'); hoseOn = true; hoseVM.show(true); audio.play('slideGrab', { vol: 0.35 }); }
+function hoseEquip() { if (!G.has.hose) { G.toast('The hose pack is in the red fire cache at the trailhead.'); return; } if (hoseOn) return; rifleOff(); setBino(false); vm.setADS(false); aimHeld = false; vm.equip('none'); hoseOn = true; hoseVM.show(true); audio.play('slideGrab', { vol: 0.35 }); }
 function resetShift(keepKey) {
   G.power = true; T.power = true; T.radioDead = false; G.radioDead = false; G.pending = new Set(); G.groundOnce = false; G.reportTried = false; $('power').style.display = 'none';
   if (nearFire) { nearFire.dispose(); nearFire = null; } hoseOff(); G.has.hose = false; GR.hosePack.visible = true; $('tHose').classList.add('hidden');
   if (!keepKey) { G.has.key = false; T.keyProp.visible = true; } T.gate.locked = true; T.gate.open = false; T.gate.chain.visible = true;
   G.gen = { running: true, fuel: 1, hasCan: false, pulls: 0 }; GR.can.visible = true; GR.genLamp.material.emissiveIntensity = 2.2; if (!genHum) genHum = SFX.genLoop(audio, GR.genWorld);
   SW.hide(); SW.cool = 8; cut = null; document.body.classList.remove('cine'); if (holdTgt && holdTgt.holdEnd) holdTgt.holdEnd(); holdTgt = null; panicT = 0; progress(null); setObjective('', '');
-  P.mode = 'cab'; P.y = F; P.s = 0;
+  P.mode = 'cab'; P.y = F; P.s = 0; P.indoor = false; P.onWood = false; rifleOff(); CB.door.open = false; CB.door.target = 0; show('mapView', false); G.mapOpen = false;
 }
 function startNight(n, fromTutorial = false) {
   G.night = n; G.state = 'play'; G.clockMin = SHIFT_START; G.clockHour = 21; G.nightT = 0; localStorage.setItem('elgo.night', String(n));
@@ -353,6 +407,7 @@ function startNight(n, fromTutorial = false) {
   shiftStats = { fires: 0, outages: 0, scares: 0, reported: fires.reported };
   G.toast(D.title, 4); setObjective('', ''); $('objective').innerHTML = `<span class="small">Watch the ridges until 2:00 AM. Report smoke on the radio. Keep the lights on.</span>`;
   setTimeout(() => { if (G.state === 'play' && !G.objTitle) $('objective').innerHTML = ''; }, 16000);
+  clearTimeout(G._rifleHintT); G._rifleHintT = setTimeout(() => { if (G.state === 'play' && !G.has.rifle && G.night === n) G.radioSay(n === 1 ? 'Elgo, Base. One more thing. My old .308 is still on the rack at the ranger cabin, northwest down the lantern trail. It\u2019s marked on the site map by your door. Hope you never need it.' : 'Elgo, Base. Something\u2019s been seen near the summit. The .308 is at the ranger cabin. Site map by your door. Go get it.', { dur: 7 }); }, n === 1 ? 50000 : 26000);
 }
 function runEvent(e) {
   if (e.type === 'checkin') { if (G.power && !G.radioDead) { G.radioSay(e.text); G.pendingCheckin = true; } }
@@ -483,12 +538,12 @@ function startIntro(n = 1) {
   G.onIntroDone = () => { intro = null; introShadows(false); if (n === 1) startTutorial(); else continueNight(n); };
 }
 function startTutorial() {
-  G.state = 'tutorial'; G.night = 1; hideVM(); G.has = { bino: false, torch: false, gun: true, key: false, hose: false }; T.drawer.hasTorch = true; if (T.torchProp) T.torchProp.visible = true;
+  G.state = 'tutorial'; G.night = 1; hideVM(); G.has = { bino: false, torch: false, gun: true, key: false, hose: false, rifle: false }; CB.resetRifle(); $('tRifle').classList.add('hidden'); T.drawer.hasTorch = true; if (T.torchProp) T.torchProp.visible = true;
   resetShift(false); G.state = 'tutorial'; GR.setNight(1);
   enterTower(); G.clockMin = 21 * 60; G.clockHour = 21; vm.ammo = { mag: 9, chamber: 1, reserve: 40, cap: 10 };
   setTimeout(() => { if (G.state === 'tutorial' && !tut) tut = new Tutorial(D_TUT); }, 2500);
 }
-function continueNight(n) { hideScreens(); tut = null; $('objective').innerHTML = ''; audio.stopLoop('music', 1.5); G.has = { bino: true, torch: true, gun: true, key: false, hose: false }; if (T.binoProp) T.binoProp.visible = false; T.interact = T.interact.filter(i => i.id !== 'bino'); T.drawer.hasTorch = false; if (T.torchProp) T.torchProp.visible = false; hideVM(); if (vm.total < 20) vm.ammo = { mag: 9, chamber: 1, reserve: 30, cap: 10 }; G.night = n; enterTower(); startNight(n); }
+function continueNight(n) { hideScreens(); tut = null; $('objective').innerHTML = ''; audio.stopLoop('music', 1.5); G.has = { bino: true, torch: true, gun: true, key: false, hose: false, rifle: !!G.has.rifle }; if (G.has.rifle) { CB.rifle.visible = false; CB.rifleTaken = true; if (rifleVM.total < 20) rifleVM.ammo = { mag: 4, chamber: 1, reserve: 45, cap: 5 }; } else CB.resetRifle(); if (T.binoProp) T.binoProp.visible = false; T.interact = T.interact.filter(i => i.id !== 'bino'); T.drawer.hasTorch = false; if (T.torchProp) T.torchProp.visible = false; hideVM(); if (vm.total < 20) vm.ammo = { mag: 9, chamber: 1, reserve: 30, cap: 10 }; G.night = n; enterTower(); startNight(n); }
 function hideScreens() { for (const s of ['splash', 'menu', 'settings', 'log', 'pause', 'dawn', 'shiftSel']) show(s, false); }
 function toMenu() {
   G.state = 'menu'; hideScreens(); show('menu'); show('hud', false); input.setEnabled(false); director.clear(); fires.clear(); tut = null; G.subtitle(null); clearInterval(G._dawnT);
@@ -502,8 +557,8 @@ function toMenu() {
 let prevState = null;
 function pause() { if (G.state === 'paused') return; prevState = G.state; G.state = 'paused'; show('pause'); $('pSecrets').textContent = secretsLine(); input.setEnabled(false); vm.setADS(false); audio.hum(false); audio.suspendSafe(); $('controlsHelp').innerHTML = controlsHTML(); }
 function resume() { show('pause', false); G.state = prevState; input.setEnabled(true); audio.resumeSafe(); input.lock(); }
-function controlsHTML() { return (PHONE || input.touchOn ? 'Left stick: walk (push all the way to run) &middot; drag right side: look &middot; FIRE &middot; AIM (hold) &middot; R reload &middot; BINO &middot; LIGHT (flashlight) &middot; 9MM &middot; HOSE &middot; FLOOD (hold) &middot; USE (doors, radio, key, gate, fuel, hose, inspect)'
-  : 'WASD walk &middot; Shift run &middot; Mouse look &middot; Left click fire / flashlight / spray &middot; Right click aim (gun) or binoculars &middot; B binoculars &middot; R reload &middot; 1 pistol &middot; 2 flashlight &middot; 3 fire hose &middot; E use (hold: floodlight, refuel) &middot; Esc pause') + `<br><br>${secretsLine()}`; }
+function controlsHTML() { return (PHONE || input.touchOn ? 'Left stick: walk (push all the way to run) &middot; drag right side: look &middot; FIRE &middot; AIM (hold) &middot; R reload &middot; BINO &middot; LIGHT (flashlight / rifle light) &middot; 9MM &middot; RIFLE &middot; HOSE &middot; FLOOD (hold) &middot; USE (doors, radio, key, gate, fuel, hose, inspect)'
+  : 'WASD walk &middot; Shift run (stamina) &middot; Mouse look &middot; Left click fire / flashlight / spray &middot; Right click aim / scope or binoculars &middot; B binoculars &middot; R reload &middot; 1 pistol &middot; 2 rifle (flashlight until you find it) &middot; 3 fire hose &middot; 4 flashlight &middot; F light on / off &middot; E use (hold: floodlight, refuel) &middot; Esc pause') + `<br><br>${secretsLine()}`; }
 
 // ---------------- menus / settings UI ----------------
 $('mPlay').onclick = () => { safe(() => audio.unlock()); startIntro(); };
@@ -546,9 +601,13 @@ function lightVM() {
   // cool moon rim on the slide edge / knuckles; stronger outside
   vm.rim.intensity = night ? (inCab ? 0.55 : 1.0) : 0.15;
   if (torchW.visible) vm.fill.intensity += 0.6;
+  vm.rim.intensity += HZ.flash * 2.5; vm.hemi.intensity += HZ.flash * 0.8;
 }
 function syncTorch() {
-  const on = vm.torchOn && vm.mode === 'torch' && !bino; torchW.intensity = on ? 60 : 0; torchW.visible = on; if (!on) return;
+  const fl = G.torchFlick ?? 1;
+  if (rifleOn && rifleVM.lightOn && rifleVM.g.visible && !bino) { torchW.visible = true; torchW.intensity = 55 * fl; rifleVM.lens && rifleVM.lens.material.emissive && (rifleVM.lens.material.emissiveIntensity = 2 * fl); vm.camera.updateMatrixWorld(); rifleVM.g.updateMatrixWorld(true);
+    const { p: lp, d: ld } = rifleVM.lightLocal(); const p = lp.applyMatrix4(camera.matrixWorld); const d = ld.transformDirection(camera.matrixWorld); torchW.position.copy(p); torchW.target.position.copy(p).addScaledVector(d, 6); torchW.target.updateMatrixWorld(); return; }
+  const on = vm.torchOn && vm.mode === 'torch' && !bino; torchW.intensity = on ? 60 * fl : 0; torchW.visible = on; if (!on) return;
   vm.camera.updateMatrixWorld(); vm.torch.updateWorldMatrix(true, true); const tip = vm.torch.userData.tip; tip.updateWorldMatrix(true, false);
   const vInv = vm.camera.matrixWorld.clone().invert(); const p = new THREE.Vector3().setFromMatrixPosition(tip.matrixWorld).applyMatrix4(vInv).applyMatrix4(camera.matrixWorld);
   const d = new THREE.Vector3(0, 0, -1).transformDirection(vm.torch.matrixWorld).transformDirection(vInv).transformDirection(camera.matrixWorld);
@@ -573,10 +632,11 @@ function frame(now) {
     renderer.toneMappingExposure = G_baseExp.v * 1.7; audio.breathing('scared'); listener(); render(false); return; }
   if (G.state === 'play' || G.state === 'tutorial') gameUpdate(dt, inp);
   if (G.state === 'caught') { listener(); render(false); return; }
-  render(!bino && (vm.mode !== 'none' || hoseVM.g.visible));
+  render(!bino && !G.scoped && (vm.mode !== 'none' || hoseVM.g.visible || rifleVM.g.visible));
 }
 function waypoint() {
   if (tut && tut.step) { if (tut.step.id === 's8') return { p: T.targetPos, l: 'TARGET' }; if (tut.step.id === 's10' && !G.has.key) return { p: T.keyProp.getWorldPosition(V(0, 0, 0)), l: 'KEY' }; return null; }
+  if (G.state === 'play' && !G.pending.size && P.mode === 'ground' && !G.has.rifle && !P.indoor) return { p: CB.porchFront.clone().add(V(0, 1.6, 0)), l: 'CABIN ' + Math.round(Math.hypot(P.x - CB.porchFront.x, P.z - CB.porchFront.z)) + ' m' };
   if (G.state !== 'play' || !G.pending.size) return null; const pd = G.pending;
   if (P.mode === 'cab') { if (pd.has('return') && !pd.has('fire') && !pd.has('power')) return null; if (!G.has.key) return { p: T.keyProp.getWorldPosition(V(0, 0, 0)), l: 'KEY' }; return { p: V(T.gate.x ?? (T.hatch.x0 + T.hatch.x1) / 2, F + 0.6, T.hatch.z1 - 0.4), l: T.gate.locked ? 'GATE' : 'STAIRS' }; }
   if (P.mode === 'stairs') return null;
@@ -594,23 +654,28 @@ function drawWaypoint() {
 function gameUpdate(dt, inp) {
   const P_ = inp.pressed, Hh = inp.held;
   // ---- actions ----
+  // 1 pistol, 2 rifle (once you have it; flashlight before that), 3 hose, 4 flashlight
+  if (P_.has('weapon2')) { if (G.has.rifle) P_.add('rifle'); else P_.add('torch'); }
+  if (P_.has('rifle')) { if (rifleOn) { rifleOff(); vm.equip('gun'); } else rifleEquip(); }
   if (P_.has('hose')) { if (hoseOn) { hoseOff(); vm.equip('gun'); } else hoseEquip(); }
   if (hoseOn && (P_.has('gun') || P_.has('torch') || P_.has('torchBtn') || P_.has('bino'))) hoseOff();
+  if (rifleOn && (P_.has('gun') || P_.has('torch'))) rifleOff();
   const gunOut = vm.mode === 'gun' && !vm.hidden;
   if (P_.has('bino')) setBino(!bino);
-  if (P_.has('aimDown')) { if (gunOut && !bino) aimHeld = true; else if (!hoseOn && (!PHONE || !gunOut)) { binoHold = true; setBino(true); } }
+  if (P_.has('aimDown')) { if ((gunOut || rifleOn) && !bino) aimHeld = true; else if (!hoseOn && (!PHONE || !gunOut)) { binoHold = true; setBino(true); } }
   if (P_.has('aimUp')) { aimHeld = false; if (binoHold) { binoHold = false; setBino(false); } }
   if (!Hh.has('aim')) aimHeld = false;
-  vm.setADS(aimHeld && !bino);
-  if (P_.has('fire') && !bino && !hoseOn) { if (vm.mode === 'gun') vm.fire(); else if (vm.mode === 'torch') vm.toggleTorch(); }
+  vm.setADS(aimHeld && !bino && !rifleOn); rifleVM.setADS(aimHeld && !bino && rifleOn);
+  if (P_.has('fire') && !bino && !hoseOn) { if (rifleOn) rifleVM.fire(); else if (vm.mode === 'gun') vm.fire(); else if (vm.mode === 'torch') vm.toggleTorch(); }
   if (P_.has('fire') && bino && !binoHold) setBino(false);
-  if (P_.has('reload') && !hoseOn) vm.reload();
+  if (P_.has('reload') && !hoseOn) { if (rifleOn) rifleVM.reload(); else vm.reload(); }
   if (P_.has('gun')) { setBino(false); if (vm.mode !== 'gun') vm.equip('gun'); }
-  if (P_.has('torch') || P_.has('torchBtn')) { setBino(false); if (!G.has.torch) G.toast('The flashlight is in the desk drawer.'); else if (vm.mode === 'torch') { if (P_.has('torchBtn')) vm.toggleTorch(); } else vm.equip('torch'); }
-  if (P_.has('torchToggle') && vm.mode === 'torch') vm.toggleTorch();
+  if (rifleOn && (P_.has('torchBtn') || P_.has('torchToggle'))) rifleVM.toggleLight();
+  else if (P_.has('torch') || P_.has('torchBtn')) { setBino(false); if (!G.has.torch) G.toast('The flashlight is in the desk drawer.'); else if (vm.mode === 'torch') { if (P_.has('torchBtn')) vm.toggleTorch(); } else vm.equip('torch'); }
+  if (!rifleOn && P_.has('torchToggle') && vm.mode === 'torch') vm.toggleTorch();
   // ---- interact ----
   const eye = V(P.x, P.y + EYE, P.z); const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-  let tgt = null, bestS = -1; for (const it of [...T.interact, ...GR.interact, genIt, hoseIt]) { if (it.avail && !it.avail()) continue; const d = it.pos.clone().sub(eye); const L = d.length(); if (L > it.r) continue; const s = fwd.dot(d) / L; if (s > 0.55 && s - L * 0.1 > bestS) { bestS = s - L * 0.1; tgt = it; } }
+  let tgt = null, bestS = -1; for (const it of [...T.interact, ...GR.interact, ...(P.mode === 'ground' ? CB.interact : []), genIt, hoseIt]) { if (it.avail && !it.avail()) continue; const d = it.pos.clone().sub(eye); const L = d.length(); if (L > it.r) continue; const s = fwd.dot(d) / L; if (s > 0.55 && s - L * 0.1 > bestS) { bestS = s - L * 0.1; tgt = it; } }
   const pr = $('prompt'); if (tgt && !bino) { pr.style.display = 'block'; const t = (PHONE || input.touchOn ? useLabel(tgt) + ': ' : 'E: ') + tgt.label(); if (pr.textContent !== t) pr.textContent = t; } else pr.style.display = 'none';
   { const ub = $('tUse'), want = tgt && !bino ? useLabel(tgt) : 'USE'; if (ub.textContent !== want) ub.textContent = want; }
   if (P_.has('useDown')) { if (tgt && tgt.canHold && tgt.canHold()) holdTgt = tgt; else if (tgt && !tgt.hold) tgt.press(); else floodHeld = true; }
@@ -620,35 +685,43 @@ function gameUpdate(dt, inp) {
   if (floodOn !== T.flood.on) { T.flood.on = floodOn; audio.hum(floodOn); audio.play('slideRelease', { vol: 0.3 }); }
   if (!G.power && (Hh.has('flood') || floodHeld) && hatchMsgT <= 0) { G.toast('No power to the floodlight.'); hatchMsgT = 3; }
   // ---- look + move ----
-  const zoom = bino ? 7 : 1; const sensK = bino ? 0.16 : (vm.ads ? 0.6 : 1);
+  const scopeK = rifleOn ? THREE.MathUtils.smoothstep(rifleVM.adsK, 0.55, 0.95) : 0; const scoped = scopeK > 0.6; const zoom = bino ? 7 : 1; const sensK = bino ? 0.16 : scoped ? 0.22 : (vm.ads || rifleVM.adsK > 0.5 ? 0.6 : 1);
   P.yaw -= inp.look.x * sensK; P.pitch = THREE.MathUtils.clamp(P.pitch - inp.look.y * sensK, -1.45, 1.35);
   const dyaw = P.yaw - prevYaw; prevYaw = P.yaw;
-  const moved = bino ? 0 : movePlayer(dt, inp);
-  const moving = moved / Math.max(dt, 1e-3);
+  inp.sprint = HZ.stamina(dt, inp.sprint, (G._lastMoving || 0) > 1.5) && inp.sprint; const moved = bino ? 0 : movePlayer(dt, inp);
+  const moving = moved / Math.max(dt, 1e-3); G._lastMoving = moving;
   camera.position.set(P.x, P.y + EYE, P.z); /* no camera bob or shake: only the hands sway */ camera.rotation.set(P.pitch, P.yaw, 0, 'YXZ');
-  const zf = Math.tan(vm.camera.fov * Math.PI / 360) / Math.tan(52 * Math.PI / 360); let fov = 2 * Math.atan(Math.tan(S.fov * Math.PI / 360) * zf) * 180 / Math.PI; if (bino) fov = 2 * Math.atan(Math.tan(S.fov * Math.PI / 360) / zoom) * 180 / Math.PI;
+  const zf = Math.tan(vm.camera.fov * Math.PI / 360) / Math.tan(52 * Math.PI / 360); let fov = 2 * Math.atan(Math.tan(S.fov * Math.PI / 360) * zf) * 180 / Math.PI; if (bino) fov = 2 * Math.atan(Math.tan(S.fov * Math.PI / 360) / zoom) * 180 / Math.PI; else if (scopeK > 0) fov = 2 * Math.atan(Math.tan(fov * Math.PI / 360) / (1 + 3 * scopeK)) * 180 / Math.PI;
+  $('scope').classList.toggle('on', scoped && !bino); G.scoped = scoped && !bino; if (G.scoped) { const b = Math.round(bearingOf(fwd.x, fwd.z)); const t = `4x  \u00b7  BRG ${String(b).padStart(3, '0')}\u00b0`; if ($('scopeInfo').textContent !== t) $('scopeInfo').textContent = t; }
   if (Math.abs(camera.fov - fov) > 1e-3) { camera.fov = fov; camera.updateProjectionMatrix(); }
   camera.updateMatrixWorld();
   if (bino) { const b = Math.round(bearingOf(fwd.x, fwd.z)); $('binoInfo').textContent = `BRG ${String(b).padStart(3, '0')}\u00b0   7x50`; }
   // ---- viewmodel + hose ----
   const lookV = { x: inp.look.x * 400, y: inp.look.y * 400 };
   vm.update(dt, { moveAmt: Math.min(1, moving / 1.6), looking: Math.abs(inp.look.x) + Math.abs(inp.look.y) > 0.002, look: lookV, noInspect: bino || hoseOn });
-  hoseVM.update(dt, { look: lookV, moveAmt: Math.min(1, moving / 1.6) });
+  hoseVM.update(dt, { look: lookV, moveAmt: Math.min(1, moving / 1.6) }); rifleVM.update(dt, { look: lookV, moveAmt: Math.min(1, moving / 1.6) });
   const spraying = hoseOn && hoseVM.active && Hh.has('fire') && !bino; hoseVM.spray = spraying; stream.on = spraying;
   let noz = null, sdir = null; if (hoseVM.g.visible) { const tl = hoseVM.tipLocal(); noz = tl.p.clone().applyMatrix4(camera.matrixWorld); sdir = fwd.clone().add(V(0, 0.06, 0)).normalize(); }
   stream.update(dt, noz, sdir, nearFire && !nearFire.out ? nearFire : null, (p) => { if (hissT <= 0) { hissT = 0.28; SFX.hiss(audio, p, 0.35, 0.5); } });
   if (spraying && !sprayLoop) sprayLoop = SFX.sprayLoop(audio); else if (!spraying && sprayLoop) { sprayLoop.stop(); sprayLoop = null; }
   // ---- world ----
-  W.update(dt, camera); T.update(dt, G.time); fires.update(dt, { bino }); GR.update(dt); mistUpdate(dt); if (nearFire) nearFire.update(dt);
+  W.update(dt, camera); T.update(dt, G.time); fires.update(dt, { bino }); GR.update(dt); CB.update(dt, { player: P }); HZ.update(dt, { floorAt: CB.floorAt, onWood: P.onWood }); floodMoths.update(G.time, T.flood.k > 0.2 || (P.mode === 'cab' && G.power)); mistUpdate(dt); if (nearFire) nearFire.update(dt);
   if (!holdTgt) { if (nearFire && !nearFire.out && P.mode === 'ground' && Math.hypot(P.x - nearFire.pos.x, P.z - nearFire.pos.z) < 28) progress(1 - nearFire.hp, 'Fire knocked down: ' + Math.round((1 - nearFire.hp) * 100) + '%'); else progress(null); }
   if (tut) { tut.update(dt, { dyaw, moved }); if (tut.fire) tut.fire.update(dt); }
   if (G.state === 'play') nightUpdate(dt); else { G.clockHour = 21; }
   // ---- the thing in the trees (only when you are on the ground at night) ----
   const swActive = G.state === 'play' && P.mode === 'ground' && !G.noteOpen && (G.shift ? G.shift.aggr : 0) > 0;
   const swHead = SW.model.position.clone().add(V(0, 1.6, 0)); const lit = (torchW.visible && G.inView(swHead, 22) ? 1 : 0) + (T.flood.k > 0.3 ? 0.5 : 0);
-  SW.update(dt, { player: V(P.x, P.y, P.z), active: swActive, aggr: G.shift ? G.shift.aggr : 0, lit: Math.min(1, lit + 0.15), viewDir: fwd });
+  SW.update(dt, { player: V(P.x, P.y, P.z), active: swActive, aggr: G.shift ? G.shift.aggr : 0, lit: Math.min(1, lit + 0.15 + HZ.flash), viewDir: fwd, flash: HZ.flash,
+    cabin: CB, indoor: (P.indoor = P.mode === 'ground' && CB.indoors(P.x, P.z)), doorOpen: CB.door.open && Math.abs(CB.door.a) > 1, floorAt: CB.floorAt, avoid: (p) => CB.pushOut(p), route: swRoute });
+  if (G.revealT > 0) { G.revealT -= dt; if (G.revealT <= 0 && SW.state === 'watch') { SW.hide(); SW.cool = Math.max(SW.cool, 6); } }
+  // lightning: thunder rolls in a few seconds later; sometimes the flash shows it standing out there, watching
+  HZ.updateSky(dt, { night: true, indoor: !!P.indoor || (P.mode === 'cab' && Math.max(Math.abs(P.x), Math.abs(P.z)) < H), play: G.state === 'play' || G.state === 'tutorial', onFlash: () => { if (G.state === 'play' && SW.state === 'off' && (G.shift?.aggr || 0) > 0 && Math.random() < (P.mode === 'cab' ? 0.35 : 0.5)) setTimeout(() => lightningReveal(), 20); } });
+  if (HZ.flash > 0.001) { if (G._hb == null) G._hb = W.hemi.intensity; W.hemi.intensity = G._hb + HZ.flash * 2.4; } else if (G._hb != null) { W.hemi.intensity = G._hb; G._hb = null; }
+  const swOut = SW.model.visible && SW.state !== 'off' && SW.state !== 'bolt'; const swDist = SW.model.position.distanceTo(V(P.x, P.y, P.z));
+  const dread = HZ.updateDread(dt, { swDist, swOut, ground: P.mode === 'ground', onStatic: (k) => { const c = audio.ctx; if (c) squelch(c.currentTime + 0.01, 0.25 + Math.random() * 0.4, 0.05 * k + 0.03); } }); G.torchFlick = dread.flick;
+  if (P.mode === 'ground' && G.state === 'play') HZ.updateGround(dt, { P, fwd, offTrail: CB.trailDist(P.x, P.z) > 7 && Math.hypot(P.x, P.z) > 20 && !P.indoor && Math.hypot(P.x - CB.center.x, P.z - CB.center.z) > 12, swOut, night: true });
   const swNear = SW.state === 'charge' || (SW.state === 'stalk' && SW.model.position.distanceTo(V(P.x, P.y, P.z)) < 18);
-  hbT -= dt; if (swNear && hbT < 0) { hbT = SW.state === 'charge' ? 0.5 : 0.85; SFX.heartbeat(audio, SW.state === 'charge' ? 0.75 : 0.4); }
   if (G.pending.has('power') || (G.radioDead && P.mode !== 'cab') || swNear) panicT = Math.max(panicT, 1.5);
   // creaks + breathing (calm / stairs + trail / panic / held on ADS)
   creakT -= dt; if (creakT < 0) { creakT = 18 + Math.random() * 30; audio.play('tower-creak-' + (1 + Math.floor(Math.random() * 6)), { vol: 0.5, pos: { x: (Math.random() - 0.5) * 4, y: F - 2 - Math.random() * 8, z: (Math.random() - 0.5) * 4 }, ref: 6 }); }
@@ -656,8 +729,12 @@ function gameUpdate(dt, inp) {
   audio.breathing((vm.ads || bino) ? 'hold' : panicT > 0 ? 'panic' : scareT > 0 ? 'scared' : (P.mode === 'stairs' && moving > 0.2) ? 'stairs' : moving > 2.8 ? 'sprint' : (moving > 2 || (P.mode === 'ground' && moving > 1.2)) ? 'run' : moving > 0.2 ? 'move' : 'idle');
   // ---- HUD ----
   $('clock').textContent = G.state === 'tutorial' ? 'Night 1 \u00b7 9:00 PM' : `${G.night > 7 ? 'Endless ' + (G.night - 7) : 'Night ' + G.night} \u00b7 ${hhmm(G.clockMin)}`;
-  $('ammo').textContent = hoseOn ? 'HOSE' : vm.mode === 'gun' && !vm.hidden ? `${vm.ammo.mag + vm.ammo.chamber} | ${vm.ammo.reserve}` : '';
-  $('cross').style.display = bino || vm.ads ? 'none' : 'block';
+  { const t = hoseOn ? 'HOSE' : rifleOn ? `.308  ${rifleVM.ammo.mag + rifleVM.ammo.chamber} | ${rifleVM.ammo.reserve}` : vm.mode === 'gun' && !vm.hidden ? `${vm.ammo.mag + vm.ammo.chamber} | ${vm.ammo.reserve}` : ''; if ($('ammo').textContent !== t) $('ammo').textContent = t; }
+  { const ce = $('compass'); const on = G.state === 'play' && !bino && !G.scoped; ce.style.display = on ? 'block' : 'none'; if (on && ((G._cmpT = (G._cmpT || 0) + 1) & 1)) { const marks = [];
+      if (P.mode !== 'cab') marks.push({ b: bearingOf(-P.x, -P.z), l: 'TOWER' }); if (!P.indoor && Math.hypot(P.x - CB.center.x, P.z - CB.center.z) > 6) marks.push({ b: bearingOf(CB.center.x - P.x, CB.center.z - P.z), l: 'CABIN', cls: 'cab' });
+      if (nearFire && !nearFire.out) marks.push({ b: bearingOf(nearFire.pos.x - P.x, nearFire.pos.z - P.z), l: 'FIRE', cls: 'cab' }); HZ.drawCompass(ce, $('compassStrip'), fwd, marks); } }
+  { const st = $('stamina'); const show_ = HZ.stam < 0.98; st.style.opacity = show_ ? 1 : 0; $('staminaBar').style.width = Math.round(HZ.stam * 100) + '%'; st.classList.toggle('tired', HZ.stamLock); }
+  $('cross').style.display = bino || vm.ads || G.scoped ? 'none' : 'block';
   drawWaypoint();
   renderer.toneMappingExposure = G_baseExp.v * (bino ? (T.flood.k > 0.2 ? 0.55 : 1.8) : 1) * (P.mode === 'cab' ? 1 : 1.25);
   syncTorch(); listener();
@@ -688,5 +765,5 @@ G.state = 'menuWait'; render(false);
 G.state = 'boot'; status(PHONE ? 'Ready.' : 'Ready.'); show('splashGo'); $('loadMsg').classList.add('small');
 requestAnimationFrame(frame);
 // test hooks (headless checks)
-window.__game = { camera, torchW, radio: () => ({ cur: radioCur && { t: radioCur.t, dur: radioCur.dur, shown: radioCur.shown, out: radioCur.out }, q: radioQ.length, state: G.state }), G, P, input, vm, T, W, startIntro, startTutorial, continueNight, toMenu, tutorial: () => tut, intro: () => intro, setBino, director, fires, shoot, radioPress, GR, SW, hoseVM, stream, get nearFire() { return nearFire; }, outage, deadFire, restorePower, startCutscene, shiftComplete, resetShift, startNight, startIntro, hoseEquip, takeHose, genIt, hoseIt, fireOut, found, secretsLine, openSecret, cut: () => cut, ST, stairAt, waypoint };
+window.__game = { camera, torchW, radio: () => ({ cur: radioCur && { t: radioCur.t, dur: radioCur.dur, shown: radioCur.shown, out: radioCur.out }, q: radioQ.length, state: G.state }), G, P, input, vm, T, W, startIntro, startTutorial, continueNight, toMenu, tutorial: () => tut, intro: () => intro, setBino, director, fires, shoot, radioPress, GR, SW, hoseVM, stream, get nearFire() { return nearFire; }, outage, deadFire, restorePower, startCutscene, shiftComplete, resetShift, startNight, startIntro, hoseEquip, takeHose, genIt, hoseIt, fireOut, found, secretsLine, openSecret, cut: () => cut, ST, stairAt, waypoint, CB, height, rifleVM, HZ, giveRifle, rifleEquip, rifleOff, openMap, siteMap, lightningReveal, hitSW, renderer, get rifleOn() { return rifleOn; } };
 window.THREE = THREE; window.gameReady = true;
