@@ -1,0 +1,32 @@
+{
+ "file": "mychief-map-height-2048.png",
+ "format": "16-bit greyscale PNG, 2048 x 2048 (also raw little-endian Uint16: mychief-map-height-2048.u16, mychief-map-height-1024.u16)",
+ "samples_per_side": 2048,
+ "meters_per_pixel": 4.0,
+ "extent_m": 8188.0,
+ "extent_note": "Samples are VERTICES. Sample (row i, col j) sits at x = -4094 + 4*j, z = -4094 + 4*i. Vertex-to-vertex size is 8188 m (~8.2 x 8.2 km). The 1024 raw file keeps every 2nd sample (8 m spacing, same 8188 m extent, x = -4094 + 8*j).",
+ "origin": {
+  "x": 0,
+  "z": 0,
+  "meaning": "Tower centre. Tower base ground y = 0 (exact, flat pad r~10 m). Tower sits between the 4 centre samples (rows/cols 1023-1024)."
+ },
+ "axes_threejs": {
+  "+x": "east",
+  "-z": "north",
+  "+z": "south",
+  "+y": "up",
+  "image_top_row": "north (z = -4094)",
+  "image_left_col": "west (x = -4094)",
+  "bearing": "bearing 0 = north (-z), 90 = east (+x); x = sin(b)*d, z = -cos(b)*d (same as GD geo.js polar())"
+ },
+ "height_min_m": -701,
+ "height_max_m": 270,
+ "height_units": "metres relative to tower base (y = 0)",
+ "decode": "y = height_min_m + (value / 65535) * (height_max_m - height_min_m)",
+ "precision_m": 0.0148,
+ "lake_level_m": -413.3,
+ "parking_lot_y_m": -2.0,
+ "nominal_elevation_asl_of_y0_m": 2290,
+ "nominal_elevation_note": "Flavour only (for UI/altimeter text); nothing in the files depends on it.",
+ "albedo_alignment": "mychief-map-albedo-*.jpg, splat and masks cover exactly the same square (UV 0..1 = x/z -4094..+4094, image top = north). Use PlaneGeometry default UVs."
+}

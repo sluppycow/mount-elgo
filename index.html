@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>MOUNT ELGO</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="src/game/style.css">
+<script>
+// Boot safety net (non-module, so it runs even if a module fails on an older Safari): any error before the game is ready
+// is shown on the splash with a Reload button instead of leaving the player stuck on "Loading...".
+(function () {
+  function fail(msg) { if (window.gameReady) return; var m = document.getElementById('loadMsg'); if (!m) return;
+    m.textContent = 'Could not start: ' + msg + (/(iPhone|iPad)/.test(navigator.userAgent) ? ' (iOS 16.4 or newer is needed)' : '');
+    var b = document.getElementById('bootRetry'); if (b) b.classList.remove('hidden'); }
+  window.__bootFail = fail;
+  addEventListener('error', function (e) { if (e && e.message) fail(e.message); });
+  addEventListener('unhandledrejection', function (e) { fail(String(e && e.reason && (e.reason.message || e.reason))); });
+  if (!HTMLScriptElement.supports || !HTMLScriptElement.supports('importmap')) addEventListener('DOMContentLoaded', function () { fail('this browser is too old for the game'); });
+  setTimeout(function () { if (!window.gameReady) fail('loading is taking too long'); }, 90000);
+})();
+</script>
+<script type="importmap">{"imports":{"three":"./lib/three.module.min.js","three/addons/":"./lib/addons/"}}</script>
+</head><body>
+<canvas id="c"></canvas>
+<div id="fade"></div>
+<div id="vignette"></div>
+<div id="bino"><div class="lens l"></div><div class="lens r"></div><div id="binoInfo"></div></div>
+<div id="hud">
+  <div id="clock"></div>
+  <div id="ammo"></div>
+  <div id="cross"></div>
+  <div id="prompt"></div>
+  <div id="objective"></div>
+  <div id="toast"></div>
+  <div id="subs"></div>
+  <div id="tgtMark" style="display:none"></div>
+  <div id="progress"><div id="progressBar"></div><span id="progressText"></span></div>
+  <div id="power"></div>
+</div>
+<div id="touch">
+  <div id="stickZone"><div id="stickBase"><div id="stickKnob"></div></div></div>
+  <div id="lookZone"></div>
+  <div class="tb" id="tFire">FIRE</div>
+  <div class="tb" id="tAim">AIM</div>
+  <div class="tb" id="tReload">R</div>
+  <div class="tb" id="tBino">BINO</div>
+  <div class="tb" id="tTorch">LIGHT</div>
+  <div class="tb" id="tGun">9MM</div>
+  <div class="tb hidden" id="tHose">HOSE</div>
+  <div class="tb" id="tFlood">FLOOD</div>
+  <div class="tb" id="tUse">USE</div>
+  <div class="tb small" id="tPause">II</div>
+</div>
+<div id="note" class="panel hidden"><div id="noteText"></div><button id="noteClose">Close</button></div>
+<div id="splash" class="screen"><h1>MOUNT ELGO</h1><p class="tag">Your job is to watch.</p><p id="loadMsg">Loading the mountain...</p><button id="splashGo" class="hidden">Tap to begin</button><button id="bootRetry" class="hidden" onclick="location.reload()">Reload</button><p class="small">Headphones recommended.</p></div>
+<div id="menu" class="screen hidden">
+  <h1>MOUNT ELGO</h1><p class="tag">Your job is to watch.</p>
+  <button id="mPlay">Begin Shift</button>
+  <button id="mContinue" class="hidden">Resume Shift</button>
+  <button id="mNight" class="hidden">Continue: Night 1</button>
+  <button id="mSettings">Settings</button>
+  <button id="mShift" class="hidden">Shift Select</button>
+  <button id="mLog">Station Log</button>
+  <p class="small" id="menuHint"></p>
+</div>
+<div id="settings" class="screen hidden">
+  <h2>Settings</h2>
+  <div class="sgrid">
+  <label>Graphics Quality <select id="sQuality"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
+  <label>Look Sensitivity <input type="range" id="sSens" min="0.2" max="3" step="0.05"></label>
+  <label>Master Volume <input type="range" id="sVol" min="0" max="1" step="0.01"></label>
+  <label>Field of View <input type="range" id="sFov" min="55" max="90" step="1"><span id="sFovV"></span></label>
+  <label>Touch Controls <select id="sTouch"><option value="auto">Auto</option><option value="on">Show</option><option value="off">Hide</option></select></label>
+  <label>Invert Y <input type="checkbox" id="sInvert"></label>
+  <label>Large radio text <input type="checkbox" id="sSubs"></label>
+  </div>
+  <p class="small" id="sNote"></p>
+  <button id="sBack">Back</button>
+</div>
+<div id="shiftSel" class="screen hidden"><h2>Shift Select</h2><div id="shiftList"></div><button id="shiftBack">Back</button></div>
+<div id="log" class="screen hidden"><h2>Station Log</h2><div id="logText"></div><button id="logBack">Back</button></div>
+<div id="pause" class="screen hidden"><h2>Shift Paused</h2><p class="small">The forest is waiting.</p><p class="small" id="pSecrets"></p><button id="pResume">Resume</button><button id="pSettings">Settings</button><button id="pMenu">Return to Station</button><div id="controlsHelp"></div></div>
+<div id="dawn" class="screen hidden"><h2 id="dawnTitle"></h2><div id="dawnText"></div><button id="dawnGo">Next night</button></div>
+<script type="module" src="src/main.js"></script>
+</body></html>

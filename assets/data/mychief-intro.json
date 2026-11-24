@@ -1,0 +1,169 @@
+{
+ "game": "MOUNT ELGO",
+ "scene": "intro_drive",
+ "time_of_day": "morning",
+ "ambience_notes": "early morning light, low sun over the ridge, frost in the shade, birdsong through the cab window (suggested sfx id: mychief-morning-birds-loop, not yet made)",
+ "total_duration_s": 88.07,
+ "characters": {
+  "BOSS": "D. Marsh, supervisor, Kettle Fork Ranger Station, callsign Kettle Base",
+  "PLAYER": "Fire lookout, callsign Unit Four, silent protagonist with 3 short lines"
+ },
+ "voices": {
+  "BOSS": "en-US-ChristopherNeural",
+  "PLAYER": "en-US-EricNeural"
+ },
+ "lines": [
+  {
+   "id": "i01",
+   "speaker": "BOSS",
+   "text": "Kettle Base to Unit Four. Good morning. Radio check. You still with me?",
+   "start_s": 0.6,
+   "duration_s": 6.19,
+   "audio_ogg": "voice/intro/mychief-intro-i01-boss.ogg",
+   "audio_wav": "voice/intro/mychief-intro-i01-boss.wav"
+  },
+  {
+   "id": "i02",
+   "speaker": "PLAYER",
+   "text": "Loud and clear, Base.",
+   "start_s": 7.59,
+   "duration_s": 2.92,
+   "audio_ogg": "voice/intro/mychief-intro-i02-player.ogg",
+   "audio_wav": "voice/intro/mychief-intro-i02-player.wav"
+  },
+  {
+   "id": "i03",
+   "speaker": "BOSS",
+   "text": "Good. Road gets rough past Hale Creek, so take it slow. Sun's barely up and there's ice in the shade.",
+   "start_s": 11.31,
+   "duration_s": 7.85,
+   "audio_ogg": "voice/intro/mychief-intro-i03-boss.ogg",
+   "audio_wav": "voice/intro/mychief-intro-i03-boss.wav"
+  },
+  {
+   "id": "i04",
+   "speaker": "BOSS",
+   "text": "You'll be at Mount Elgo Tower in about ten minutes. Early start, but you'll want the day to settle in. Best view in Tamarack National Forest.",
+   "start_s": 19.86,
+   "duration_s": 9.71,
+   "audio_ogg": "voice/intro/mychief-intro-i04-boss.ogg",
+   "audio_wav": "voice/intro/mychief-intro-i04-boss.wav"
+  },
+  {
+   "id": "i05",
+   "speaker": "BOSS",
+   "text": "Your job's simple. You watch. Any smoke, any glow, you get on this radio and report it. Bearing and distance.",
+   "start_s": 30.27,
+   "duration_s": 9.17,
+   "audio_ogg": "voice/intro/mychief-intro-i05-boss.ogg",
+   "audio_wav": "voice/intro/mychief-intro-i05-boss.wav"
+  },
+  {
+   "id": "i06",
+   "speaker": "PLAYER",
+   "text": "Copy. Smoke or fire, I report it.",
+   "start_s": 40.14,
+   "duration_s": 4.0,
+   "audio_ogg": "voice/intro/mychief-intro-i06-player.ogg",
+   "audio_wav": "voice/intro/mychief-intro-i06-player.wav"
+  },
+  {
+   "id": "i07",
+   "speaker": "BOSS",
+   "text": "One rule, and I need you to hear it. Never leave the tower. Whatever you hear down there, you stay up top.",
+   "start_s": 44.94,
+   "duration_s": 7.72,
+   "audio_ogg": "voice/intro/mychief-intro-i07-boss.ogg",
+   "audio_wav": "voice/intro/mychief-intro-i07-boss.wav"
+  },
+  {
+   "id": "i08",
+   "speaker": "PLAYER",
+   "text": "Never leave the tower. Understood.",
+   "start_s": 53.36,
+   "duration_s": 3.52,
+   "audio_ogg": "voice/intro/mychief-intro-i08-player.ogg",
+   "audio_wav": "voice/intro/mychief-intro-i08-player.wav"
+  },
+  {
+   "id": "i09",
+   "speaker": "BOSS",
+   "text": "There's a nine millimeter in the cab. That's for protection, not for hunting. Fifty rounds, so make them count.",
+   "start_s": 58.68,
+   "duration_s": 8.03,
+   "audio_ogg": "voice/intro/mychief-intro-i09-boss.ogg",
+   "audio_wav": "voice/intro/mychief-intro-i09-boss.wav"
+  },
+  {
+   "id": "i10",
+   "speaker": "BOSS",
+   "text": "Road's about to flatten out. That's the lot ahead. Park it and head on up.",
+   "start_s": 67.51,
+   "duration_s": 5.72,
+   "audio_ogg": "voice/intro/mychief-intro-i10-boss.ogg",
+   "audio_wav": "voice/intro/mychief-intro-i10-boss.wav"
+  },
+  {
+   "id": "i11",
+   "speaker": "BOSS",
+   "text": "Tower's all yours. I'll check in after dark. Kettle Base out.",
+   "start_s": 77.43,
+   "duration_s": 5.44,
+   "audio_ogg": "voice/intro/mychief-intro-i11-boss.ogg",
+   "audio_wav": "voice/intro/mychief-intro-i11-boss.wav"
+  }
+ ],
+ "cue_markers": [
+  {
+   "id": "arrive_lot",
+   "time_s": 74.43
+  },
+  {
+   "id": "engine_off",
+   "time_s": 76.43
+  },
+  {
+   "id": "door_open",
+   "time_s": 83.47
+  },
+  {
+   "id": "door_close",
+   "time_s": 85.27
+  },
+  {
+   "id": "fade_black",
+   "time_s": 86.07,
+   "fade_duration_s": 2.0
+  }
+ ],
+ "sfx": [
+  {
+   "id": "mychief-truck-drive-loop",
+   "start_s": 0,
+   "end_s": 74.43,
+   "note": "loop, fade to idle at arrive_lot"
+  },
+  {
+   "id": "mychief-truck-idle-loop",
+   "start_s": 74.43,
+   "end_s": 76.43,
+   "note": "loop, plays between arrive_lot and engine_off"
+  },
+  {
+   "id": "mychief-truck-engine-off",
+   "start_s": 76.43,
+   "one_shot": true
+  },
+  {
+   "id": "mychief-truck-door-open",
+   "start_s": 83.47,
+   "one_shot": true
+  },
+  {
+   "id": "mychief-truck-door-close",
+   "start_s": 85.27,
+   "one_shot": true
+  }
+ ],
+ "note": "Visuals built in-engine by GD. Fade to black ends the scene; Mount Elgo main game follows."
+}

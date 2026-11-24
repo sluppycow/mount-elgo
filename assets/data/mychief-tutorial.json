@@ -1,0 +1,288 @@
+{
+ "game": "MOUNT ELGO",
+ "scene": "tutorial_wake_in_tower",
+ "time_of_day": "night",
+ "speaker": "BOSS (D. Marsh, Kettle Base)",
+ "steps": [
+  {
+   "id": "s1",
+   "name": "Look around and move",
+   "objective": "Look around the cab, then walk to the window and back.",
+   "completion_condition": "look_delta>=120deg AND moved>=4m",
+   "prompt_pc": "Mouse to look, W A S D to walk",
+   "prompt_phone": "Drag right side of screen to look, left joystick to walk",
+   "boss_lines": [
+    {
+     "id": "s1a",
+     "speaker": "BOSS",
+     "text": "Elgo Tower, Kettle Base. It's well after dark. You awake up there? Take a second. Have a look around the cab.",
+     "duration_s": 9.09,
+     "audio_ogg": "voice/tutorial/mychief-tut-s1-a.ogg",
+     "audio_wav": "voice/tutorial/mychief-tut-s1-a.wav"
+    },
+    {
+     "id": "s1b",
+     "speaker": "BOSS",
+     "text": "Get your legs under you. Walk over to the window and back.",
+     "duration_s": 4.47,
+     "audio_ogg": "voice/tutorial/mychief-tut-s1-b.ogg",
+     "audio_wav": "voice/tutorial/mychief-tut-s1-b.wav"
+    }
+   ],
+   "step_complete_line": {
+    "id": "s1done",
+    "speaker": "BOSS",
+    "text": "Good. You're moving fine.",
+    "duration_s": 2.94,
+    "audio_ogg": "voice/tutorial/mychief-tut-s1-done.ogg",
+    "audio_wav": "voice/tutorial/mychief-tut-s1-done.wav"
+   }
+  },
+  {
+   "id": "s2",
+   "name": "Use the binoculars",
+   "objective": "Raise the binoculars and scan the ridge.",
+   "completion_condition": "binoculars_raised_for>=2s",
+   "prompt_pc": "Hold Right Mouse Button or press B for binoculars",
+   "prompt_phone": "Tap the binoculars icon, drag to scan",
+   "boss_lines": [
+    {
+     "id": "s2a",
+     "speaker": "BOSS",
+     "text": "Binoculars are on the desk. Pick them up and scan the east ridge for me. Moon's up, so you should see fine.",
+     "duration_s": 7.95,
+     "audio_ogg": "voice/tutorial/mychief-tut-s2-a.ogg",
+     "audio_wav": "voice/tutorial/mychief-tut-s2-a.wav"
+    }
+   ],
+   "step_complete_line": {
+    "id": "s2done",
+    "speaker": "BOSS",
+    "text": "That's the idea. Nice and slow.",
+    "duration_s": 3.53,
+    "audio_ogg": "voice/tutorial/mychief-tut-s2-done.ogg",
+    "audio_wav": "voice/tutorial/mychief-tut-s2-done.wav"
+   }
+  },
+  {
+   "id": "s3",
+   "name": "Tower floodlight",
+   "objective": "Hold the floodlight switch to light the area in front of the tower, then release.",
+   "completion_condition": "floodlight_held_for>=2s AND released",
+   "prompt_pc": "Hold E to use the floodlight",
+   "prompt_phone": "Hold the light button",
+   "boss_lines": [
+    {
+     "id": "s3a",
+     "speaker": "BOSS",
+     "text": "It's dark out there. There's a floodlight switch by the window. Hold it down and it lights up the ground in front of you. Let go and it shuts off. It runs on the generator, so don't leave it burning.",
+     "duration_s": 12.73,
+     "audio_ogg": "voice/tutorial/mychief-tut-s3-a.ogg",
+     "audio_wav": "voice/tutorial/mychief-tut-s3-a.wav"
+    }
+   ],
+   "step_complete_line": {
+    "id": "s3done",
+    "speaker": "BOSS",
+    "text": "Good. Lights out, easy on the generator.",
+    "duration_s": 3.91,
+    "audio_ogg": "voice/tutorial/mychief-tut-s3-done.ogg",
+    "audio_wav": "voice/tutorial/mychief-tut-s3-done.wav"
+   }
+  },
+  {
+   "id": "s4",
+   "name": "Flashlight",
+   "objective": "Equip the flashlight and toggle it on and off.",
+   "completion_condition": "flashlight_equipped AND toggled_on AND toggled_off",
+   "prompt_pc": "Press 2 to equip the flashlight, Left Mouse Button to switch it on or off",
+   "prompt_phone": "Tap the flashlight icon, then tap the fire button to toggle",
+   "boss_lines": [
+    {
+     "id": "s4a",
+     "speaker": "BOSS",
+     "text": "Your flashlight's in the desk drawer. Take it out, then click it on. Click again to turn it off.",
+     "duration_s": 7.06,
+     "audio_ogg": "voice/tutorial/mychief-tut-s4-a.ogg",
+     "audio_wav": "voice/tutorial/mychief-tut-s4-a.wav"
+    }
+   ],
+   "step_complete_line": {
+    "id": "s4done",
+    "speaker": "BOSS",
+    "text": "Good. Batteries are fresh, but save them.",
+    "duration_s": 4.08,
+    "audio_ogg": "voice/tutorial/mychief-tut-s4-done.ogg",
+    "audio_wav": "voice/tutorial/mychief-tut-s4-done.wav"
+   }
+  },
+  {
+   "id": "s5",
+   "name": "Spot and report the smoke",
+   "objective": "Find the glow and smoke plume on the east ridge and report it by radio.",
+   "completion_condition": "plume_in_view_through_binoculars AND interact_pressed",
+   "prompt_pc": "Press E to use the radio",
+   "prompt_phone": "Look at the radio and tap USE (it turns into RADIO)",
+   "boss_lines": [
+    {
+     "id": "s5a",
+     "speaker": "BOSS",
+     "text": "Got a call from the next district. They saw a glow on that ridge. Look about two o'clock.",
+     "duration_s": 6.61,
+     "audio_ogg": "voice/tutorial/mychief-tut-s5-a.ogg",
+     "audio_wav": "voice/tutorial/mychief-tut-s5-a.wav"
+    },
+    {
+     "id": "s5b",
+     "speaker": "BOSS",
+     "text": "See it? Orange glow under a pale column of smoke, lit up by the moon. Key the radio and report it.",
+     "duration_s": 7.72,
+     "audio_ogg": "voice/tutorial/mychief-tut-s5-b.ogg",
+     "audio_wav": "voice/tutorial/mychief-tut-s5-b.wav"
+    }
+   ],
+   "step_complete_line": {
+    "id": "s5done",
+    "speaker": "BOSS",
+    "text": "Copy that, smoke and glow on the east ridge. Crew's rolling. Good work.",
+    "duration_s": 6.41,
+    "audio_ogg": "voice/tutorial/mychief-tut-s5-done.ogg",
+    "audio_wav": "voice/tutorial/mychief-tut-s5-done.wav"
+   }
+  },
+  {
+   "id": "s6",
+   "name": "Equip the sidearm",
+   "objective": "Take out the 9mm.",
+   "completion_condition": "sidearm_equipped",
+   "prompt_pc": "Press 1 to equip the pistol",
+   "prompt_phone": "Tap the pistol icon",
+   "boss_lines": [
+    {
+     "id": "s6a",
+     "speaker": "BOSS",
+     "text": "Now, the nine millimeter. It's in your holster. Get it out. Protection only.",
+     "duration_s": 6.78,
+     "audio_ogg": "voice/tutorial/mychief-tut-s6-a.ogg",
+     "audio_wav": "voice/tutorial/mychief-tut-s6-a.wav"
+    }
+   ],
+   "step_complete_line": {
+    "id": "s6done",
+    "speaker": "BOSS",
+    "text": "Good. Keep your finger off the trigger until you mean it.",
+    "duration_s": 4.19,
+    "audio_ogg": "voice/tutorial/mychief-tut-s6-done.ogg",
+    "audio_wav": "voice/tutorial/mychief-tut-s6-done.wav"
+   }
+  },
+  {
+   "id": "s7",
+   "name": "Aim down sights",
+   "objective": "Aim through the red dot sight.",
+   "completion_condition": "ads_active_for>=1s",
+   "prompt_pc": "Hold Right Mouse Button to aim",
+   "prompt_phone": "Hold the aim button on the right",
+   "boss_lines": [
+    {
+     "id": "s7a",
+     "speaker": "BOSS",
+     "text": "Raise it. Put the red dot on the lit target on the tall mast just east of the tower.",
+     "duration_s": 4.72,
+     "audio_ogg": "voice/tutorial/mychief-tut-s7-a.ogg",
+     "audio_wav": "voice/tutorial/mychief-tut-s7-a.wav"
+    }
+   ],
+   "step_complete_line": {
+    "id": "s7done",
+    "speaker": "BOSS",
+    "text": "Steady. That's the way.",
+    "duration_s": 2.82,
+    "audio_ogg": "voice/tutorial/mychief-tut-s7-done.ogg",
+    "audio_wav": "voice/tutorial/mychief-tut-s7-done.wav"
+   }
+  },
+  {
+   "id": "s8",
+   "name": "Fire",
+   "objective": "Shoot the practice target.",
+   "completion_condition": "shots_fired>=1 AND target_hit",
+   "prompt_pc": "Left Mouse Button to fire",
+   "prompt_phone": "Tap the fire button",
+   "boss_lines": [
+    {
+     "id": "s8a",
+     "speaker": "BOSS",
+     "text": "Squeeze off one round at the target. Just one. Rounds are limited up there.",
+     "duration_s": 6.08,
+     "audio_ogg": "voice/tutorial/mychief-tut-s8-a.ogg",
+     "audio_wav": "voice/tutorial/mychief-tut-s8-a.wav"
+    }
+   ],
+   "step_complete_line": {
+    "id": "s8done",
+    "speaker": "BOSS",
+    "text": "Good shot. Remember, fifty rounds, no more.",
+    "duration_s": 4.72,
+    "audio_ogg": "voice/tutorial/mychief-tut-s8-done.ogg",
+    "audio_wav": "voice/tutorial/mychief-tut-s8-done.wav"
+   }
+  },
+  {
+   "id": "s9",
+   "name": "Reload",
+   "objective": "Reload the pistol.",
+   "completion_condition": "reload_completed",
+   "prompt_pc": "Press R to reload",
+   "prompt_phone": "Tap the reload button",
+   "boss_lines": [
+    {
+     "id": "s9a",
+     "speaker": "BOSS",
+     "text": "Last thing. Reload. Drop the mag and seat a fresh one.",
+     "duration_s": 5.27,
+     "audio_ogg": "voice/tutorial/mychief-tut-s9-a.ogg",
+     "audio_wav": "voice/tutorial/mychief-tut-s9-a.wav"
+    }
+   ],
+   "step_complete_line": {
+    "id": "s9done",
+    "speaker": "BOSS",
+    "text": "That's it. You're set. Stay up, watch, and call in anything you see. Kettle Base out.",
+    "duration_s": 7.57,
+    "audio_ogg": "voice/tutorial/mychief-tut-s9-done.ogg",
+    "audio_wav": "voice/tutorial/mychief-tut-s9-done.wav"
+   }
+  }
+ ],
+ "controls": {
+  "pc": {
+   "look": "Mouse",
+   "move": "W A S D",
+   "binoculars": "Hold Right Mouse Button or B",
+   "floodlight": "Hold E (release to turn off)",
+   "radio_interact": "E (press)",
+   "flashlight_equip": "2",
+   "flashlight_toggle": "Left Mouse Button while equipped",
+   "sidearm_equip": "1",
+   "aim_down_sights": "Hold Right Mouse Button",
+   "fire": "Left Mouse Button",
+   "reload": "R"
+  },
+  "phone": {
+   "look": "Drag right side of screen",
+   "move": "Left joystick",
+   "binoculars": "Binoculars icon",
+   "floodlight": "Hold the light button (release to turn off)",
+   "radio_interact": "Radio button",
+   "flashlight_equip": "Flashlight icon",
+   "flashlight_toggle": "Fire button while flashlight is equipped",
+   "sidearm_equip": "Pistol icon",
+   "aim_down_sights": "Hold aim button",
+   "fire": "Fire button",
+   "reload": "Reload button"
+  },
+  "note": "E is context-sensitive: hold near the floodlight switch for light, press at the radio to report."
+ },
+ "note": "Prompt text uses default PC keys and touch labels; GD may rebind."
+}

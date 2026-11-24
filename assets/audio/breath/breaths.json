@@ -1,0 +1,19 @@
+{
+ "in_nose_1": 1.72,
+ "out_nose_1": 2.458,
+ "in_nose_2": 1.78,
+ "out_nose_2": 2.055,
+ "in_nose_3": 1.59,
+ "out_nose_3": 2.444,
+ "in_mouth_1": 1.122,
+ "out_mouth_1": 1.648,
+ "in_mouth_2": 1.359,
+ "out_mouth_2": 1.507,
+ "in_heavy_1": 0.731,
+ "out_heavy_1": 0.84,
+ "in_heavy_2": 0.721,
+ "out_heavy_2": 0.881,
+ "in_heavy_3": 0.771,
+ "out_heavy_3": 0.908,
+ "out_release_1": 1.22
+}

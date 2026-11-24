@@ -1,0 +1,316 @@
+{
+ "sounds": {
+  "wind-night-loop": {
+   "file": "assets/audio/wind-night-loop.mp3",
+   "loop": true,
+   "volume": 0.95,
+   "category": "ambience"
+  },
+  "tower-creak-1": {
+   "file": "assets/audio/tower-creak-1.mp3",
+   "loop": false,
+   "volume": 0.42,
+   "category": "tower"
+  },
+  "tower-creak-2": {
+   "file": "assets/audio/tower-creak-2.mp3",
+   "loop": false,
+   "volume": 0.42,
+   "category": "tower"
+  },
+  "tower-creak-3": {
+   "file": "assets/audio/tower-creak-3.mp3",
+   "loop": false,
+   "volume": 0.42,
+   "category": "tower"
+  },
+  "tower-creak-4": {
+   "file": "assets/audio/tower-creak-4.mp3",
+   "loop": false,
+   "volume": 0.42,
+   "category": "tower"
+  },
+  "tower-creak-5": {
+   "file": "assets/audio/tower-creak-5.mp3",
+   "loop": false,
+   "volume": 0.42,
+   "category": "tower"
+  },
+  "tower-creak-6": {
+   "file": "assets/audio/tower-creak-6.mp3",
+   "loop": false,
+   "volume": 0.42,
+   "category": "tower"
+  },
+  "door-open": {
+   "file": "assets/audio/door-open.mp3",
+   "loop": false,
+   "volume": 0.7,
+   "category": "door"
+  },
+  "door-close": {
+   "file": "assets/audio/door-close.mp3",
+   "loop": false,
+   "volume": 0.75,
+   "category": "door"
+  },
+  "footstep-wood-1": {
+   "file": "assets/audio/footstep-wood-1.mp3",
+   "loop": false,
+   "volume": 0.55,
+   "category": "footstep"
+  },
+  "footstep-wood-2": {
+   "file": "assets/audio/footstep-wood-2.mp3",
+   "loop": false,
+   "volume": 0.55,
+   "category": "footstep"
+  },
+  "footstep-wood-3": {
+   "file": "assets/audio/footstep-wood-3.mp3",
+   "loop": false,
+   "volume": 0.55,
+   "category": "footstep"
+  },
+  "footstep-wood-4": {
+   "file": "assets/audio/footstep-wood-4.mp3",
+   "loop": false,
+   "volume": 0.55,
+   "category": "footstep"
+  },
+  "footstep-wood-5": {
+   "file": "assets/audio/footstep-wood-5.mp3",
+   "loop": false,
+   "volume": 0.55,
+   "category": "footstep"
+  },
+  "footstep-wood-6": {
+   "file": "assets/audio/footstep-wood-6.mp3",
+   "loop": false,
+   "volume": 0.55,
+   "category": "footstep"
+  },
+  "footstep-wood-7": {
+   "file": "assets/audio/footstep-wood-7.mp3",
+   "loop": false,
+   "volume": 0.55,
+   "category": "footstep"
+  },
+  "footstep-wood-8": {
+   "file": "assets/audio/footstep-wood-8.mp3",
+   "loop": false,
+   "volume": 0.55,
+   "category": "footstep"
+  },
+  "animal-owl-1": {
+   "file": "assets/audio/animal-owl-1.mp3",
+   "loop": false,
+   "volume": 0.35,
+   "category": "animal"
+  },
+  "animal-owl-2": {
+   "file": "assets/audio/animal-owl-2.mp3",
+   "loop": false,
+   "volume": 0.35,
+   "category": "animal"
+  },
+  "animal-coyote-howl": {
+   "file": "assets/audio/animal-coyote-howl.mp3",
+   "loop": false,
+   "volume": 0.3,
+   "category": "animal"
+  },
+  "animal-coyote-yips": {
+   "file": "assets/audio/animal-coyote-yips.mp3",
+   "loop": false,
+   "volume": 0.3,
+   "category": "animal"
+  },
+  "animal-coyote-howl-2": {
+   "file": "assets/audio/animal-coyote-howl-2.mp3",
+   "loop": false,
+   "volume": 0.3,
+   "category": "animal"
+  },
+  "animal-elk-bugle": {
+   "file": "assets/audio/animal-elk-bugle.mp3",
+   "loop": false,
+   "volume": 0.35,
+   "category": "animal"
+  },
+  "far-scream-1": {
+   "file": "assets/audio/far-scream-1.mp3",
+   "loop": false,
+   "volume": 0.26,
+   "category": "far"
+  },
+  "far-scream-2": {
+   "file": "assets/audio/far-scream-2.mp3",
+   "loop": false,
+   "volume": 0.26,
+   "category": "far"
+  },
+  "far-scream-3": {
+   "file": "assets/audio/far-scream-3.mp3",
+   "loop": false,
+   "volume": 0.26,
+   "category": "far"
+  },
+  "far-knocking-1": {
+   "file": "assets/audio/far-knocking-1.mp3",
+   "loop": false,
+   "volume": 0.4,
+   "category": "far"
+  },
+  "far-knocking-2": {
+   "file": "assets/audio/far-knocking-2.mp3",
+   "loop": false,
+   "volume": 0.4,
+   "category": "far"
+  },
+  "far-knocking-3": {
+   "file": "assets/audio/far-knocking-3.mp3",
+   "loop": false,
+   "volume": 0.4,
+   "category": "far"
+  },
+  "far-whistle-1": {
+   "file": "assets/audio/far-whistle-1.mp3",
+   "loop": false,
+   "volume": 0.3,
+   "category": "far"
+  },
+  "far-whistle-2": {
+   "file": "assets/audio/far-whistle-2.mp3",
+   "loop": false,
+   "volume": 0.3,
+   "category": "far"
+  },
+  "far-whistle-3": {
+   "file": "assets/audio/far-whistle-3.mp3",
+   "loop": false,
+   "volume": 0.3,
+   "category": "far"
+  },
+  "far-branch-snap-1": {
+   "file": "assets/audio/far-branch-snap-1.mp3",
+   "loop": false,
+   "volume": 0.5,
+   "category": "far"
+  },
+  "far-branch-snap-2": {
+   "file": "assets/audio/far-branch-snap-2.mp3",
+   "loop": false,
+   "volume": 0.5,
+   "category": "far"
+  },
+  "far-branch-snap-3": {
+   "file": "assets/audio/far-branch-snap-3.mp3",
+   "loop": false,
+   "volume": 0.5,
+   "category": "far"
+  },
+  "far-branch-snap-4": {
+   "file": "assets/audio/far-branch-snap-4.mp3",
+   "loop": false,
+   "volume": 0.5,
+   "category": "far"
+  },
+  "stinger-1": {
+   "file": "assets/audio/stinger-1.mp3",
+   "loop": false,
+   "volume": 0.7,
+   "category": "stinger"
+  },
+  "stinger-2": {
+   "file": "assets/audio/stinger-2.mp3",
+   "loop": false,
+   "volume": 0.7,
+   "category": "stinger"
+  },
+  "stinger-3": {
+   "file": "assets/audio/stinger-3.mp3",
+   "loop": false,
+   "volume": 0.7,
+   "category": "stinger"
+  },
+  "stinger-4": {
+   "file": "assets/audio/stinger-4.mp3",
+   "loop": false,
+   "volume": 0.7,
+   "category": "stinger"
+  },
+  "menu-music": {
+   "file": "assets/audio/menu-music.mp3",
+   "loop": true,
+   "volume": 0.4,
+   "category": "music"
+  },
+  "truck-drive-loop": {
+   "file": "assets/audio/truck-drive-loop.mp3",
+   "loop": true,
+   "volume": 0.6,
+   "category": "truck"
+  },
+  "truck-idle-loop": {
+   "file": "assets/audio/truck-idle-loop.mp3",
+   "loop": true,
+   "volume": 0.5,
+   "category": "truck"
+  },
+  "truck-engine-off": {
+   "file": "assets/audio/truck-engine-off.mp3",
+   "loop": false,
+   "volume": 0.6,
+   "category": "truck"
+  },
+  "truck-door-open": {
+   "file": "assets/audio/truck-door-open.mp3",
+   "loop": false,
+   "volume": 0.65,
+   "category": "truck"
+  },
+  "truck-door-close": {
+   "file": "assets/audio/truck-door-close.mp3",
+   "loop": false,
+   "volume": 0.8,
+   "category": "truck"
+  },
+  "radio-in-start": {
+   "file": "assets/audio/radio/radio-in-start.ogg",
+   "alt": "assets/audio/radio/radio-in-start.mp3",
+   "loop": false,
+   "volume": 0.7,
+   "category": "voice"
+  },
+  "radio-in-end": {
+   "file": "assets/audio/radio/radio-in-end.ogg",
+   "alt": "assets/audio/radio/radio-in-end.mp3",
+   "loop": false,
+   "volume": 0.7,
+   "category": "voice"
+  },
+  "radio-player-ptt": {
+   "file": "assets/audio/radio/radio-player-ptt.ogg",
+   "alt": "assets/audio/radio/radio-player-ptt.mp3",
+   "loop": false,
+   "volume": 0.7,
+   "category": "voice"
+  },
+  "radio-text-blip": {
+   "file": "assets/audio/radio/radio-text-blip.ogg",
+   "alt": "assets/audio/radio/radio-text-blip.mp3",
+   "loop": false,
+   "volume": 0.35,
+   "category": "voice"
+  },
+  "radio-static-bed": {
+   "file": "assets/audio/radio/radio-static-bed.ogg",
+   "alt": "assets/audio/radio/radio-static-bed.mp3",
+   "loop": true,
+   "volume": 0.25,
+   "category": "voice"
+  }
+ },
+ "note_radio": "No spoken radio voice: all radio dialogue is text + synthesized squelch/beeps (src/main.js radioSay)."
+}

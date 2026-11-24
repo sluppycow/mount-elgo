@@ -1,0 +1,667 @@
+{
+ "game": "MOUNT ELGO",
+ "version": 1,
+ "events": [
+  {
+   "id": "ev01",
+   "name": "The Standing Light",
+   "what_appears": "A single warm yellow light, like a flashlight, standing still between trees. No person visible.",
+   "location_type": "treeline",
+   "distance_m": [
+    600,
+    900
+   ],
+   "bearing": "NE, 40-60 deg",
+   "behavior": "Stays perfectly still, then dims out and relights 20 m to the left, never moving between.",
+   "duration_s": [
+    40,
+    70
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "Light winks out and does not return for the night.",
+    "seen_through_binoculars": "Binoculars show only a lantern-like glow with no bearer; it winks out after 3 s.",
+    "shot_at": "Bullet does nothing. Light relights closer (tier-up penalty, see escalation).",
+    "ignored": "Relights two more times, each 100 m closer, then stops.",
+    "timer": "Fades at 70 s."
+   },
+   "earliest": "Night 1, dusk-22:00",
+   "tier": 1,
+   "sound_cues": [
+    "wind_loop",
+    "stinger_soft_01",
+    "animal_owl_01"
+   ],
+   "design_note": "Teaches the player to scan. Harmless on its own; the first hint someone else is out there."
+  },
+  {
+   "id": "ev02",
+   "name": "Rangers' Truck, Wrong Road",
+   "what_appears": "Pair of headlights moving on the forest road, no engine sound at all.",
+   "location_type": "road",
+   "distance_m": [
+    1200,
+    1500
+   ],
+   "bearing": "S, 170-200 deg",
+   "behavior": "Rolls slowly along the road, stops at the cabin turn-off, lights go off. Radio call afterwards says no vehicles are out.",
+   "duration_s": [
+    45,
+    60
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "Lights switch off the moment you face them.",
+    "seen_through_binoculars": "Binoculars: no truck, just two lights floating at hood height.",
+    "shot_at": "Nothing; shots are too far. Wastes ammo.",
+    "ignored": "Lights reach the turn-off and go dark.",
+    "timer": "Dark at 60 s."
+   },
+   "earliest": "Night 1, 22:00-00:00",
+   "tier": 1,
+   "sound_cues": [
+    "wind_loop",
+    "stinger_soft_01"
+   ],
+   "design_note": "Sets up the radio lie later."
+  },
+  {
+   "id": "ev03",
+   "name": "Owl That Isn't",
+   "what_appears": "An owl call that repeats with exactly the same timing every time, coming from the balcony railing side, no bird.",
+   "location_type": "below tower",
+   "distance_m": [
+    8,
+    15
+   ],
+   "bearing": "Directly below, W side",
+   "behavior": "Sound-only event. After four identical calls the sixth sounds almost like a word.",
+   "duration_s": [
+    30,
+    50
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "Looking over the rail stops it instantly.",
+    "seen_through_binoculars": "N/A, too close for binoculars.",
+    "shot_at": "N/A",
+    "ignored": "Continues, slowly shifting to the stairwell side.",
+    "timer": "Ends at 50 s."
+   },
+   "earliest": "Night 1, 00:00-02:00",
+   "tier": 1,
+   "sound_cues": [
+    "animal_owl_01",
+    "animal_owl_02",
+    "creak_tower_01"
+   ],
+   "design_note": "Mimicry primer. Pure audio."
+  },
+  {
+   "id": "ev04",
+   "name": "The Tall Pale Shape",
+   "what_appears": "A pale vertical shape at the edge of the clearing, a little too tall to be a person.",
+   "location_type": "treeline",
+   "distance_m": [
+    250,
+    350
+   ],
+   "bearing": "N, 350-10 deg",
+   "behavior": "Stands motionless facing the tower. Each time the player looks away and back it is a few meters nearer, but never seen moving.",
+   "duration_s": [
+    60,
+    120
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "Freezes. Looking away lets it advance 5 m.",
+    "seen_through_binoculars": "Binoculars show a thin figure with no visible face, arms too long; it steps behind a trunk.",
+    "shot_at": "One shot: it drops from view and a branch snaps below the tower 10 s later. Does not die. Costs 1 round and teaches that shots don't solve it.",
+    "ignored": "Advances to 120 m then stops and leaves.",
+    "timer": "Fades at 120 s."
+   },
+   "earliest": "Night 1, 00:00-03:00",
+   "tier": 2,
+   "sound_cues": [
+    "wind_loop",
+    "stinger_spot_01",
+    "branch_snap_below_01"
+   ],
+   "design_note": "Signature slow-burn creature. Statue-style rule, no jump scare."
+  },
+  {
+   "id": "ev05",
+   "name": "Cabin Window Curtain",
+   "what_appears": "A light comes on in the abandoned Hale cabin; a figure shapes behind the curtain.",
+   "location_type": "cabin windows",
+   "distance_m": [
+    400,
+    550
+   ],
+   "bearing": "SE, 120-140 deg",
+   "behavior": "Silhouette in the window raises a hand as if waving. Curtain slides across. Another window lights.",
+   "duration_s": [
+    40,
+    80
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "All lights go off at once.",
+    "seen_through_binoculars": "Binoculars show the cabin is boarded and the curtain moves with no one there.",
+    "shot_at": "Window shatters faintly; the silhouette in the next window is still waving.",
+    "ignored": "Cycles through all four windows.",
+    "timer": "Lights out at 80 s."
+   },
+   "earliest": "Night 2, 20:00-23:00",
+   "tier": 2,
+   "sound_cues": [
+    "wind_loop",
+    "stinger_spot_01",
+    "far_knock_01"
+   ],
+   "design_note": "Cabins were 'closed' per the station log."
+  },
+  {
+   "id": "ev06",
+   "name": "Knocking From Below",
+   "what_appears": "Three slow knocks on the tower's lowest landing, then silence, repeated at longer intervals.",
+   "location_type": "below tower",
+   "distance_m": [
+    10,
+    20
+   ],
+   "bearing": "Directly below",
+   "behavior": "Sound-only. Knocks get closer to the trap door in the cab floor. The pattern copies the player's own door close timing.",
+   "duration_s": [
+    60,
+    90
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "Looking over the balcony shows nothing; knocks pause 20 s.",
+    "seen_through_binoculars": "N/A",
+    "shot_at": "Shooting down through the gaps wastes a round; knocking resumes from the other side.",
+    "ignored": "After 6 sets the knocks stop and footsteps climb 3 steps then stop.",
+    "timer": "Silence at 90 s."
+   },
+   "earliest": "Night 2, 00:00-03:00",
+   "tier": 2,
+   "sound_cues": [
+    "far_knock_01",
+    "far_knock_02",
+    "step_wood_01",
+    "creak_tower_02"
+   ],
+   "design_note": "Stairs are blocked, but the sound is the player's anxiety."
+  },
+  {
+   "id": "ev07",
+   "name": "Lake Swimmer",
+   "what_appears": "A head and shoulders in the black lake, moving across it without ripples.",
+   "location_type": "lake",
+   "distance_m": [
+    1000,
+    1400
+   ],
+   "bearing": "W, 250-280 deg",
+   "behavior": "Swims to the middle, turns to face the tower, then sinks straight down without a splash.",
+   "duration_s": [
+    50,
+    90
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "Sinks immediately.",
+    "seen_through_binoculars": "Binoculars show something pale, with water streaming up its back.",
+    "shot_at": "Too far; shot echoes across the lake and animals go silent for 20 s.",
+    "ignored": "Stays still until the timer, then sinks.",
+    "timer": "Sinks at 90 s."
+   },
+   "earliest": "Night 2, 22:00-02:00",
+   "tier": 2,
+   "sound_cues": [
+    "wind_loop",
+    "stinger_spot_02",
+    "far_whistle_01"
+   ],
+   "design_note": ""
+  },
+  {
+   "id": "ev08",
+   "name": "Elk Wrong",
+   "what_appears": "A bull elk in a meadow, standing too still, head hanging oddly.",
+   "location_type": "ridge",
+   "distance_m": [
+    700,
+    900
+   ],
+   "bearing": "NW, 300-330 deg",
+   "behavior": "Elk stands facing the tower. Then its head rotates slowly further than should be possible. Returns to normal when looked at.",
+   "duration_s": [
+    30,
+    60
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "Looks away normally and walks off.",
+    "seen_through_binoculars": "Binoculars show the neck bent backwards and eyes reflecting green.",
+    "shot_at": "Shot makes the elk collapse, then stand again and walk into the trees. Rewards no kills.",
+    "ignored": "Slowly walks into the trees.",
+    "timer": "Leaves at 60 s."
+   },
+   "earliest": "Night 3, 20:00-01:00",
+   "tier": 3,
+   "sound_cues": [
+    "animal_elk_01",
+    "stinger_spot_02",
+    "wind_loop"
+   ],
+   "design_note": "Animal-mimicry theme."
+  },
+  {
+   "id": "ev09",
+   "name": "Coyote Chorus Stops",
+   "what_appears": "Coyotes howl across the valley, then all stop in the same instant. A very human scream follows.",
+   "location_type": "valley",
+   "distance_m": [
+    1500,
+    2200
+   ],
+   "bearing": "SW, 200-230 deg",
+   "behavior": "Audio-led. A pale shape moves along the valley floor fast, too far to resolve.",
+   "duration_s": [
+    25,
+    45
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "N/A",
+    "seen_through_binoculars": "Binoculars catch a blur crossing a clearing, then nothing.",
+    "shot_at": "N/A",
+    "ignored": "Scream repeats at longer range.",
+    "timer": "Ends at 45 s."
+   },
+   "earliest": "Night 3, 00:00-03:00",
+   "tier": 3,
+   "sound_cues": [
+    "animal_coyote_01",
+    "far_scream_01",
+    "stinger_soft_01"
+   ],
+   "design_note": ""
+  },
+  {
+   "id": "ev10",
+   "name": "The Watcher on the Ridge",
+   "what_appears": "Silhouette on the opposing ridge line against the sky, perfectly framed.",
+   "location_type": "ridge",
+   "distance_m": [
+    1800,
+    2400
+   ],
+   "bearing": "E, 80-100 deg",
+   "behavior": "Stands there all night in the background. Each hour it is slightly more to the left. If the lookout waves, it waves back after a delay.",
+   "duration_s": [
+    300,
+    600
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "Stays.",
+    "seen_through_binoculars": "Binoculars show a figure in a ranger's hat and jacket.",
+    "shot_at": "Out of effective range; shot causes it to wave faster.",
+    "ignored": "Persists until dawn.",
+    "timer": "Leaves at sunrise."
+   },
+   "earliest": "Night 3, 21:00-05:00",
+   "tier": 3,
+   "sound_cues": [
+    "wind_loop",
+    "stinger_spot_01",
+    "far_whistle_02"
+   ],
+   "design_note": "Long-duration ambient horror. Threat is the ranger's hat."
+  },
+  {
+   "id": "ev11",
+   "name": "Whistle Answer",
+   "what_appears": "The player's radio click is answered by a whistle from the woods, same tone.",
+   "location_type": "treeline",
+   "distance_m": [
+    300,
+    500
+   ],
+   "bearing": "NE, 20-50 deg",
+   "behavior": "Whistle from the treeline, then again from a closer spot on the other side of the tower.",
+   "duration_s": [
+    40,
+    70
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "Whistling stops.",
+    "seen_through_binoculars": "Binoculars show nothing at the source.",
+    "shot_at": "Shooting at the sound draws a reply, now from below.",
+    "ignored": "Whistle triangulates until it is right under the cab.",
+    "timer": "Ends at 70 s."
+   },
+   "earliest": "Night 3, 22:00-03:00",
+   "tier": 3,
+   "sound_cues": [
+    "far_whistle_01",
+    "far_whistle_02",
+    "branch_snap_below_02"
+   ],
+   "design_note": ""
+  },
+  {
+   "id": "ev12",
+   "name": "Below the Tower: Footprints",
+   "what_appears": "Wet footprints appear on the lowest visible landing, leading up then turning around.",
+   "location_type": "below tower",
+   "distance_m": [
+    5,
+    12
+   ],
+   "bearing": "Directly below",
+   "behavior": "Player glances over the balcony and sees prints which weren't there before. Each night, one more landing up.",
+   "duration_s": [
+    60,
+    120
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "Prints fade as you look.",
+    "seen_through_binoculars": "N/A",
+    "shot_at": "Shooting at the base does nothing.",
+    "ignored": "Next night, prints go one landing higher.",
+    "timer": "Persist until dawn."
+   },
+   "earliest": "Night 4, 01:00-04:00",
+   "tier": 3,
+   "sound_cues": [
+    "step_wood_02",
+    "creak_tower_01",
+    "branch_snap_below_01"
+   ],
+   "design_note": ""
+  },
+  {
+   "id": "ev13",
+   "name": "Two Figures, One Shadow",
+   "what_appears": "Two figures standing in the road holding each other, with one shadow between them.",
+   "location_type": "road",
+   "distance_m": [
+    500,
+    700
+   ],
+   "bearing": "S, 160-190 deg",
+   "behavior": "Stand still, then slowly lean toward the tower in unison.",
+   "duration_s": [
+    30,
+    60
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "They turn their backs.",
+    "seen_through_binoculars": "Binoculars: faces smeared as if photographed in motion.",
+    "shot_at": "One drops; the other stays and tilts its head. One round used.",
+    "ignored": "Close-ups of faces appear on next glance.",
+    "timer": "Gone at 60 s."
+   },
+   "earliest": "Night 4, 00:00-03:00",
+   "tier": 3,
+   "sound_cues": [
+    "far_scream_02",
+    "stinger_spot_03",
+    "wind_loop"
+   ],
+   "design_note": ""
+  },
+  {
+   "id": "ev14",
+   "name": "The Door Moves",
+   "what_appears": "Cab door unlatches itself and swings open a hand's width. Cold air pours in.",
+   "location_type": "cab",
+   "distance_m": [
+    0,
+    2
+   ],
+   "bearing": "Cab door",
+   "behavior": "Door opens then closes slowly. Voice from the balcony says the lookout's name in the station voice.",
+   "duration_s": [
+    20,
+    40
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "Looking at the door does nothing; it opens when the player looks away.",
+    "seen_through_binoculars": "N/A",
+    "shot_at": "Shooting out the door yields only a splintered frame.",
+    "ignored": "Door resettles.",
+    "timer": "Done at 40 s."
+   },
+   "earliest": "Night 4, 02:00-04:00",
+   "tier": 4,
+   "sound_cues": [
+    "door_open",
+    "creak_tower_02",
+    "stinger_loud_01",
+    "door_close"
+   ],
+   "design_note": "The one close event. Rare, sudden, short."
+  },
+  {
+   "id": "ev15",
+   "name": "The Far Bonfire",
+   "what_appears": "A campfire on the opposite ridge, with a ring of standing shapes around it.",
+   "location_type": "ridge",
+   "distance_m": [
+    1600,
+    2000
+   ],
+   "bearing": "N, 5-30 deg",
+   "behavior": "Shapes stand facing out. One slowly points at the tower. Fire goes out and every figure turns.",
+   "duration_s": [
+    60,
+    100
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "Fire goes out.",
+    "seen_through_binoculars": "Binoculars: dozens of figures, all with hats like the lookouts.",
+    "shot_at": "Out of range; shape still points.",
+    "ignored": "Fire burns down.",
+    "timer": "Out at 100 s."
+   },
+   "earliest": "Night 5, 00:00-04:00",
+   "tier": 4,
+   "sound_cues": [
+    "stinger_spot_03",
+    "far_whistle_01",
+    "wind_loop"
+   ],
+   "design_note": "Reveal: previous lookouts."
+  },
+  {
+   "id": "ev16",
+   "name": "Treeline Closing In",
+   "what_appears": "In the clearing, the pale shape from ev04 has been joined by others; each appears in a different spot every time the lookout blinks (lens vignette).",
+   "location_type": "treeline",
+   "distance_m": [
+    80,
+    150
+   ],
+   "bearing": "All around, 360 deg",
+   "behavior": "Slow approach, never seen moving. Never more than 60 m away.",
+   "duration_s": [
+    120,
+    240
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "Each freezes while looked at.",
+    "seen_through_binoculars": "Binoculars show the same face on each.",
+    "shot_at": "Shot makes one retreat; the rest advance. Maximum one round suggested.",
+    "ignored": "Stop at 60 m.",
+    "timer": "Retreat at dawn."
+   },
+   "earliest": "Night 5, 01:00-04:00",
+   "tier": 4,
+   "sound_cues": [
+    "stinger_spot_03",
+    "branch_snap_below_01",
+    "step_wood_02"
+   ],
+   "design_note": "Climax. Shooting is a choice with no payoff."
+  },
+  {
+   "id": "ev17",
+   "name": "Station Voice Outside",
+   "what_appears": "The ranger station's voice calls from below the tower asking the lookout to come down.",
+   "location_type": "below tower",
+   "distance_m": [
+    5,
+    15
+   ],
+   "bearing": "Directly below",
+   "behavior": "Voice sounds identical to the dispatcher. Repeats for 40 s. Radio reports dispatcher at base.",
+   "duration_s": [
+    40,
+    80
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "Voice stops.",
+    "seen_through_binoculars": "N/A",
+    "shot_at": "Shooting down causes silence for 30 s, then voice returns in a whisper.",
+    "ignored": "Voice drifts around the tower.",
+    "timer": "Silent at 80 s."
+   },
+   "earliest": "Night 5, 02:00-04:00",
+   "tier": 4,
+   "sound_cues": [
+    "far_scream_03",
+    "creak_tower_01",
+    "step_wood_01",
+    "stinger_loud_01"
+   ],
+   "design_note": "Mimicry of the radio."
+  },
+  {
+   "id": "ev18",
+   "name": "Dawn Count",
+   "what_appears": "At first light, all shapes visible for one second: the clearing is full. Then fog.",
+   "location_type": "treeline",
+   "distance_m": [
+    50,
+    1500
+   ],
+   "bearing": "All around",
+   "behavior": "Fog rolls in, shapes vanish. Reveal sequence for night end.",
+   "duration_s": [
+    15,
+    25
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "Fog hides all.",
+    "seen_through_binoculars": "Binoculars show hats.",
+    "shot_at": "Shots wasted.",
+    "ignored": "N/A",
+    "timer": "Fog at 25 s."
+   },
+   "earliest": "Night 5, dawn",
+   "tier": 4,
+   "sound_cues": [
+    "stinger_loud_01",
+    "wind_loop",
+    "animal_owl_01"
+   ],
+   "design_note": "Night-end sting."
+  },
+  {
+   "id": "ev19",
+   "name": "Branch Snaps in the Dark",
+   "what_appears": "Sticks snapping under the tower in a pattern that circles it.",
+   "location_type": "below tower",
+   "distance_m": [
+    10,
+    25
+   ],
+   "bearing": "Circles tower",
+   "behavior": "Sound-only. Light from below flickers.",
+   "duration_s": [
+    40,
+    60
+   ],
+   "leave_triggers": {
+    "looked_at_directly": "Pauses.",
+    "seen_through_binoculars": "N/A",
+    "shot_at": "Shot toward it: laughter in the trees.",
+    "ignored": "Circles twice.",
+    "timer": "Ends at 60 s."
+   },
+   "earliest": "Night 2, 22:00-04:00",
+   "tier": 2,
+   "sound_cues": [
+    "branch_snap_below_01",
+    "branch_snap_below_02",
+    "step_wood_02"
+   ],
+   "design_note": ""
+  }
+ ],
+ "escalation": {
+  "within_a_night": [
+   {
+    "phase": "Dusk 19:00-21:00",
+    "note": "Only wind_loop, owl, one far light. Calm."
+   },
+   {
+    "phase": "Night 21:00-00:00",
+    "note": "One tier-1 event per 8-10 minutes."
+   },
+   {
+    "phase": "Deep 00:00-03:00",
+    "note": "Events pair up; two at once with sound from below."
+   },
+   {
+    "phase": "3 AM witching hour",
+    "note": "Silence in the ambience, then one tier-3 or 4 event."
+   },
+   {
+    "phase": "Dawn 05:00-06:30",
+    "note": "Everything backs off; fog; birds return. Dawn screen."
+   }
+  ],
+  "across_nights": [
+   {
+    "night": 1,
+    "tiers": [
+     1,
+     2
+    ],
+    "note": "Sights only."
+   },
+   {
+    "night": 2,
+    "tiers": [
+     1,
+     2
+    ],
+    "note": "Sounds below the tower."
+   },
+   {
+    "night": 3,
+    "tiers": [
+     1,
+     2,
+     3
+    ],
+    "note": "Mimicry."
+   },
+   {
+    "night": 4,
+    "tiers": [
+     2,
+     3,
+     4
+    ],
+    "note": "Door and footprints."
+   },
+   {
+    "night": 5,
+    "tiers": [
+     3,
+     4
+    ],
+    "note": "Climax and reveal."
+   }
+  ],
+  "ammo_rules": "No event requires shooting. No event spawns more than 1 hostile that can be shot. Shots never kill; they redirect events. Max cost 1 round per event; players can also gain nothing. Rewards for restraint: some events end faster if ignored.",
+  "scheduler": "Weights: tier-1 weight 5, tier-2 weight 3, tier-3 weight 2, tier-4 weight 1; min 90 s gap; never repeat the same event twice in a night."
+ }
+}

@@ -1,0 +1,166 @@
+{
+ "game": "MOUNT ELGO",
+ "station": "Kettle Fork Ranger Station, Tamarack National Forest",
+ "intro_note": {
+  "title": "Station Note: Read Before First Shift",
+  "from": "Kettle Fork Ranger Station, Tamarack National Forest",
+  "text": "To the Mount Elgo fire lookout,\n\nWelcome to Elgo Tower. Your job is simple: watch. Scan the ridges every hour, log any smoke, and report by radio at the top of each hour. Binoculars are in the cab. The 9mm is for bears only. You have 50 rounds, and resupply is not scheduled before the season closes.\n\nThe road washed out above Hale Creek, so nobody is coming up before the first snow. That is fine. You have food and a stove.\n\nOne rule. Never leave the tower. Whatever you hear below, whoever calls your name, whatever the radio says, you stay up. The stairs are barred for a reason. Your post is the cab and the balcony.\n\nThe forest is quiet. Keep it that way.\n\n- D. Marsh, District Dispatcher, Kettle Fork Ranger Station"
+ },
+ "radio_checkins": [
+  {
+   "id": "r01",
+   "night": 1,
+   "line": "Kettle Base to Elgo Tower. Radio check, how do you copy?",
+   "accuracy": "correct"
+  },
+  {
+   "id": "r02",
+   "night": 1,
+   "line": "Copy, Elgo. All quiet down here. Any smoke on your side?",
+   "accuracy": "correct"
+  },
+  {
+   "id": "r03",
+   "night": 2,
+   "line": "Elgo Tower, Base. Forecast is clear. Nobody else is on the mountain tonight.",
+   "accuracy": "correct"
+  },
+  {
+   "id": "r04",
+   "night": 2,
+   "line": "Elgo, we had a report of a light up your way. That would be you, correct?",
+   "accuracy": "slightly off"
+  },
+  {
+   "id": "r05",
+   "night": 3,
+   "line": "Base to Elgo. You sound tired. Stay in the tower. Everything is fine at the cabins.",
+   "accuracy": "off"
+  },
+  {
+   "id": "r06",
+   "night": 3,
+   "line": "Elgo, Base. Say again your count. How many are with you up there?",
+   "accuracy": "wrong"
+  },
+  {
+   "id": "r07",
+   "night": 4,
+   "line": "Elgo Tower. Come down and we will bring you a hot coffee. No, stay up. Disregard.",
+   "accuracy": "wrong"
+  },
+  {
+   "id": "r08",
+   "night": 4,
+   "line": "Base to Elgo. Base to Elgo. We are not on the radio. Who is on this channel?",
+   "accuracy": "wrong"
+  },
+  {
+   "id": "r09",
+   "night": 5,
+   "line": "Elgo, we can see your light from the station. We are not at the station.",
+   "accuracy": "very wrong"
+  },
+  {
+   "id": "r10",
+   "night": 5,
+   "line": "Almost morning, Elgo. They always leave at sunrise. Stay up.",
+   "accuracy": "very wrong"
+  }
+ ],
+ "menu_text": {
+  "title": "MOUNT ELGO",
+  "tagline": "Your job is to watch.",
+  "buttons": {
+   "play": "Begin Shift",
+   "continue": "Resume Shift",
+   "settings": "Settings",
+   "log": "Station Log",
+   "quit": "Leave Post"
+  },
+  "settings": {
+   "master_volume": "Master Volume",
+   "music_volume": "Music",
+   "effects_volume": "Effects",
+   "look_sensitivity": "Look Sensitivity",
+   "invert_y": "Invert Y",
+   "brightness": "Brightness",
+   "graphics_quality": "Graphics Quality",
+   "view_distance": "View Distance",
+   "subtitles": "Subtitles",
+   "touch_controls": "Touch Controls",
+   "back": "Back"
+  },
+  "pause": {
+   "title": "Shift Paused",
+   "resume": "Resume",
+   "settings": "Settings",
+   "main_menu": "Return to Station",
+   "note": "The forest is waiting."
+  },
+  "hud": {
+   "binoculars": "Binoculars",
+   "pistol": "9mm",
+   "ammo": "Rounds: {n}/50",
+   "time": "{h}:{m} AM",
+   "night": "Night {n}",
+   "interact": "Open Door",
+   "scan_hint": "Scan the ridge"
+  },
+  "death": {
+   "title": "Post Abandoned",
+   "body": "Elgo Tower stopped answering at {time}. The station sent a crew at first light. They found the door open.",
+   "retry": "Retry Night",
+   "menu": "Main Menu"
+  },
+  "dawn": {
+   "title": "Dawn",
+   "body": "The sun clears the ridge. The forest goes quiet and the birds return. You filed your report: nothing to log.",
+   "stats": "Nights survived: {n}  Rounds left: {r}",
+   "next": "Next Night",
+   "menu": "Main Menu"
+  },
+  "ending": {
+   "title": "Season Closed",
+   "body": "The road is open. The crew is coming up. You count the hats on the ridge. Then you stop counting."
+  }
+ },
+ "found_notes": [
+  {
+   "id": "n01",
+   "title": "Logbook, Aug 12",
+   "author": "R. Vance",
+   "text": "Quiet shift. Some elk at the meadow. Left coffee on the stove. Hate the creak on the 4th landing. Sounds like someone climbing but nobody is. Told Base. They said I was alone."
+  },
+  {
+   "id": "n02",
+   "title": "Logbook, Sep 3",
+   "author": "T. Okafor",
+   "text": "There is a light in the trees most nights, like a lantern. It never moves, but each night it is closer. Marked it on the map. Base said no hikers permitted."
+  },
+  {
+   "id": "n03",
+   "title": "Scrap of paper, taped under the desk",
+   "author": "unknown",
+   "text": "If it knows your name, do not answer. If it sounds like Base, do not answer. Do not go down, no matter what. The ones who went down are on the ridge now."
+  },
+  {
+   "id": "n04",
+   "title": "Logbook, Oct 1",
+   "author": "L. Hale",
+   "text": "Cabin lights came on again. My cabin has been closed since June. I waved back. I should not have. My wife used to wave from there."
+  },
+  {
+   "id": "n05",
+   "title": "Last page, handwriting shaky",
+   "author": "R. Vance",
+   "text": "Count the hats. There is one more each season. They are all lookouts. They leave at sunrise, but they come back at dusk. I can see them in the clearing. One of them is wearing my coat."
+  },
+  {
+   "id": "n06",
+   "title": "Station memo, pinned by the door",
+   "author": "D. Marsh",
+   "text": "Reminder: the stairs are barred from the inside. Do not remove the bar. Rounds are logged. Report them, do not waste them."
+  }
+ ]
+}
